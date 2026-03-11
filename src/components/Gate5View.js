@@ -73,99 +73,105 @@ export const Gate5View = (state) => `
 `;
 
 Gate5View.init = (state, render) => {
-    let selectedRegime = null;
-    const containerInput = document.getElementById('container-input');
-    const declarationInput = document.getElementById('declaration-input');
+  let selectedRegime = null;
+  const containerInput = document.getElementById('container-input');
+  const declarationInput = document.getElementById('declaration-input');
 
-    document.querySelectorAll('.regime-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.regime-btn').forEach(b => b.classList.replace('btn-primary', 'btn-secondary'));
-            btn.classList.replace('btn-secondary', 'btn-primary');
-            selectedRegime = btn.dataset.regime;
+  document.querySelectorAll('.regime-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.regime-btn').forEach(b => b.classList.replace('btn-primary', 'btn-secondary'));
+      btn.classList.replace('btn-secondary', 'btn-primary');
+      selectedRegime = btn.dataset.regime;
 
-            if (selectedRegime === 'VERDE') declarationInput.value = 'L-';
-            else if (selectedRegime === 'TRANSITO') declarationInput.value = 'D-';
-            else declarationInput.value = '';
-            declarationInput.focus();
-        });
+      if (selectedRegime === 'VERDE') declarationInput.value = 'L-';
+      else if (selectedRegime === 'TRANSITO') declarationInput.value = 'D-';
+      else declarationInput.value = '';
+      declarationInput.focus();
     });
+  });
 
-    containerInput.addEventListener('input', (e) => {
-        e.target.value = sanitizeContainer(e.target.value);
-    });
+  containerInput.addEventListener('input', (e) => {
+    e.target.value = sanitizeContainer(e.target.value);
+  });
 
-    document.getElementById('btn-add').addEventListener('click', () => {
-        const containerId = containerInput.value;
-        const declaration = declarationInput.value;
+  document.getElementById('btn-add').addEventListener('click', async () => {
+    const containerId = containerInput.value;
+    const declaration = declarationInput.value;
 
-        if (!selectedRegime) return alert('Seleccione un régimen');
-        if (!validateContainer(containerId)) return alert('Número de contenedor inválido (ISO 6346)');
+    if (!selectedRegime) return alert('Seleccione un régimen');
+    if (!validateContainer(containerId)) return alert('Número de contenedor inválido (ISO 6346)');
 
-        const record = {
-            id: containerId,
-            regime: selectedRegime,
-            declaration: declaration,
-            t1: new Date().toISOString(),
-            timestamp: Date.now(),
-        };
-
-        state.records.push(record);
-        localStorage.setItem('corinto_records', JSON.stringify(state.records));
-        render();
-    });
-
-    document.querySelectorAll('.btn-delete').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const id = parseInt(btn.dataset.id);
-            state.records = state.records.filter(r => r.timestamp !== id);
-            localStorage.setItem('corinto_records', JSON.stringify(state.records));
-            render();
-        });
-    });
-
-    // OCR Scan Logic
-    const btnScan = document.getElementById('btn-scan');
-    const btnCloseScan = document.getElementById('btn-close-scan');
-    const scanContainer = document.getElementById('scan-container');
-    const video = document.getElementById('video');
-    let stream = null;
-
-    btnScan.addEventListener('click', async () => {
-        try {
-            scanContainer.style.display = 'block';
-            stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-            });
-            video.srcObject = stream;
-            video.play();
-
-            const canvas = document.createElement('canvas');
-            // Dynamic canvas resizing
-            video.onloadedmetadata = () => {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-
-                import('../utils/ocr').then(({ runOCR }) => {
-                    runOCR(video, canvas, (detectedId) => {
-                        containerInput.value = detectedId;
-                        stopScan();
-                        alert('Contenedor detectado: ' + detectedId);
-                    });
-                });
-            };
-        } catch (err) {
-            alert('Error al acceder a la cámara: ' + err.message);
-            scanContainer.style.display = 'none';
-        }
-    });
-
-    const stopScan = () => {
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-            video.srcObject = null;
-        }
-        scanContainer.style.display = 'none';
+    const record = {
+      id: containerId,
+      regime: selectedRegime,
+      declaration: declaration,
+      t1: new Date().toISOString(),
+      timestamp: Date.now(),
+      createdBy: state.user.email,
     };
 
-    btnCloseScan.addEventListener('click', stopScan);
+    import('../utils/firebase').then(({ saveRecord }) => {
+      saveRecord(record);
+    });
+
+    // Clear inputs and give feedback
+    containerInput.value = '';
+    declarationInput.value = '';
+    alert('Salida registrada con éxito');
+  });
+
+  document.querySelectorAll('.btn-delete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.dataset.id);
+      state.records = state.records.filter(r => r.timestamp !== id);
+      localStorage.setItem('corinto_records', JSON.stringify(state.records));
+      render();
+    });
+  });
+
+  // OCR Scan Logic
+  const btnScan = document.getElementById('btn-scan');
+  const btnCloseScan = document.getElementById('btn-close-scan');
+  const scanContainer = document.getElementById('scan-container');
+  const video = document.getElementById('video');
+  let stream = null;
+
+  btnScan.addEventListener('click', async () => {
+    try {
+      scanContainer.style.display = 'block';
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      video.srcObject = stream;
+      video.play();
+
+      const canvas = document.createElement('canvas');
+      // Dynamic canvas resizing
+      video.onloadedmetadata = () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        import('../utils/ocr').then(({ runOCR }) => {
+          runOCR(video, canvas, (detectedId) => {
+            containerInput.value = detectedId;
+            stopScan();
+            alert('Contenedor detectado: ' + detectedId);
+          });
+        });
+      };
+    } catch (err) {
+      alert('Error al acceder a la cámara: ' + err.message);
+      scanContainer.style.display = 'none';
+    }
+  });
+
+  const stopScan = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      video.srcObject = null;
+    }
+    scanContainer.style.display = 'none';
+  };
+
+  btnCloseScan.addEventListener('click', stopScan);
 };
