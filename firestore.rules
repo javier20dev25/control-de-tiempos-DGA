@@ -1,0 +1,14 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /records/{record} {
+      // Allow authenticated users to read and create records
+      allow read, create: if request.auth != null;
+      
+      // Allow updates and deletes only if the user is authenticated
+      // In a real production app, you might want to restrict this to the creator or admins
+      allow update, delete: if request.auth != null;
+    }
+  }
+}

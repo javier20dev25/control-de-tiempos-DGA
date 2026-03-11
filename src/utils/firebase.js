@@ -1,19 +1,22 @@
 // Firebase configuration boilerplate
 // Replace with your actual config from Firebase Console
 export const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDfIuryf7nO5x1QXrDSbdIHigbRsnlLW0Y",
+  authDomain: "monitoreodga-dcd21.firebaseapp.com",
+  projectId: "monitoreodga-dcd21",
+  storageBucket: "monitoreodga-dcd21.firebasestorage.app",
+  messagingSenderId: "496564929095",
+  appId: "1:496564929095:web:806fc1202d2dae34326762",
+  measurementId: "G-5SNW23SV5Z"
 };
 
 import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const app = initializeApp(firebaseConfig);
+export const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 
