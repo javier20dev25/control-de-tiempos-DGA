@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>CorintoFlow | Gestión Aduanera</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div id="app">
+    <header>
+      <div class="logo">CORINTO FLOW</div>
+      <div id="status-indicator" style="width: 12px; height: 12px; border-radius: 50%; background: var(--success);">
+      </div>
+    </header>
+
+    <main id="main-content">
+      <!-- Views will be injected here -->
+    </main>
+
+    <nav class="footer-nav">
+      <a href="#" class="nav-item active" data-view="gate5">
+        <i data-lucide="log-out"></i>
+        <span>P-5</span>
+      </a>
+      <a href="#" class="nav-item" data-view="jh-in">
+        <i data-lucide="log-in"></i>
+        <span>JH IN</span>
+      </a>
+      <a href="#" class="nav-item" data-view="jh-out">
+        <i data-lucide="log-out"></i>
+        <span>JH OUT</span>
+      </a>
+      <a href="#" class="nav-item" data-view="admin">
+        <i data-lucide="bar-chart-2"></i>
+        <span>ADMIN</span>
+      </a>
+    </nav>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
