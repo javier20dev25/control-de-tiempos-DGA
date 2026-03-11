@@ -121,11 +121,16 @@ Gate5View.init = (state, render) => {
   });
 
   document.querySelectorAll('.btn-delete').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = parseInt(btn.dataset.id);
-      state.records = state.records.filter(r => r.timestamp !== id);
-      localStorage.setItem('corinto_records', JSON.stringify(state.records));
-      render();
+    btn.addEventListener('click', async () => {
+      if (!confirm('¿Desea eliminar este registro?')) return;
+      const id = btn.dataset.id;
+      const record = state.records.find(r => r.timestamp == id);
+      if (record) {
+        import('../utils/firebase').then(async ({ db }) => {
+          const { doc, deleteDoc } = await import('firebase/firestore');
+          await deleteDoc(doc(db, "records", record.id));
+        });
+      }
     });
   });
 
