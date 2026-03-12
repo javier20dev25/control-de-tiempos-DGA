@@ -14,7 +14,12 @@
 <body>
   <div id="app">
     <header>
-      <div class="logo">CORINTO FLOW</div>
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <button id="header-back-btn" class="btn-icon" style="display: none; background: transparent; border: none; color: var(--text-main); cursor: pointer; padding: 5px;">
+          <i data-lucide="arrow-left"></i>
+        </button>
+        <div class="logo">CORINTO FLOW</div>
+      </div>
       <div id="status-indicator" style="width: 12px; height: 12px; border-radius: 50%; background: var(--success);">
       </div>
     </header>
@@ -23,24 +28,7 @@
       <!-- Views will be injected here -->
     </main>
 
-    <nav class="footer-nav">
-      <a href="#" class="nav-item active" data-view="gate5">
-        <i data-lucide="log-out"></i>
-        <span>P-5</span>
-      </a>
-      <a href="#" class="nav-item" data-view="jh-in">
-        <i data-lucide="log-in"></i>
-        <span>JH IN</span>
-      </a>
-      <a href="#" class="nav-item" data-view="jh-out">
-        <i data-lucide="log-out"></i>
-        <span>JH OUT</span>
-      </a>
-      <a href="#" class="nav-item" data-view="admin">
-        <i data-lucide="bar-chart-2"></i>
-        <span>ADMIN</span>
-      </a>
-    </nav>
+
   </div>
   <script type="module" src="/src/main.js"></script>
 </body>
