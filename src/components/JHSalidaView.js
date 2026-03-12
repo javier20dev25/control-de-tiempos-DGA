@@ -1,3 +1,7 @@
+import { db, saveRecord } from '../utils/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
+import { startShift, endShift, getActiveShift } from '../utils/shifts';
+
 export const JHSalidaView = (state) => {
     const activeShift = state.activeShift;
     const shiftStartTime = activeShift ? new Date(activeShift.startTime.seconds * 1000) : null;
@@ -57,20 +61,21 @@ export const JHSalidaView = (state) => {
 };
 
 JHSalidaView.init = (state, render) => {
-  const { startShift, endShift } = require('../utils/shifts');
   const btnStart = document.getElementById('btn-start-shift-jh-out');
   const btnEnd = document.getElementById('btn-end-shift-jh-out');
 
   if (btnStart) {
     btnStart.addEventListener('click', async () => {
-      btnStart.disabled = true;
-      await startShift(state.user.email, 'jh-out');
-      import('../utils/shifts').then(({ getActiveShift }) => {
-        getActiveShift(state.user.email).then(shift => {
-          state.activeShift = shift;
-          render();
-        });
-      });
+      try {
+        btnStart.disabled = true;
+        await startShift(state.user.email, 'jh-out');
+        const shift = await getActiveShift(state.user.email);
+        state.activeShift = shift;
+        render();
+      } catch (err) {
+        alert(err.message || 'El puesto Julia Herrera (Salida) ya está ocupado.');
+        btnStart.disabled = false;
+      }
     });
   }
 
@@ -188,14 +193,18 @@ JHSalidaView.init = (state, render) => {
         const docId = btn.dataset.docid;
         try {
             btn.disabled = true;
-            btn.innerHTML = '<div class="spinner" style="width:14px; height:14px; border-width:2px; margin-bottom:0;"></div>';
-            const recordRef = doc(db, "records", docId);
-            await updateDoc(recordRef, {
+            const recordId = docId;
+            const record = state.records.find(r => r.docId === docId);
+            const updateData = {
+                ...record,
+                docId: docId,
                 status: 'finalizado',
                 t3: new Date().toISOString(),
                 salidaTimestamp: new Date().toISOString(),
                 salidaUserEmail: state.user.email
-            });
+            };
+
+            await saveRecord(updateData, state.user.email);
             showFeedback('✓ Despacho Exitoso');
             searchInput.value = '';
             setTimeout(() => render(), 1000);

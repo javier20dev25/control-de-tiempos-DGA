@@ -16,6 +16,7 @@ const state = {
     currentView: 'roleSelection', // Empezamos en selección de rol después del login
     currentRole: null, // Guarda el rol que eligió
     user: null,
+    userRole: 'inspector', // 'admin' or 'inspector'
     records: [],
     loading: true, 
     activeShift: null, 
@@ -105,25 +106,31 @@ getRedirectResult(auth)
     });
 
 // Firebase Auth & Data Listeners
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
     state.user = user;
-    sessionStorage.removeItem('isAuthRedirect'); // Always clear redirect flag
+    sessionStorage.removeItem('isAuthRedirect');
     if (user) {
-        // Remember the user for the "Welcome Back" screen
         localStorage.setItem('lastUserEmail', user.email || '');
         localStorage.setItem('lastUserName', user.displayName || '');
-        subscribeToRecords((records) => {
-            state.records = records;
-            // Fetch active shift on login
-            getActiveShift(user.email).then(shift => {
-                state.activeShift = shift;
-                state.loading = false;
-                render();
+        
+        // 1. Get Role first
+        import('./utils/firebase').then(async ({ getUserRole, subscribeToRecords }) => {
+            state.userRole = await getUserRole(user.email);
+            
+            // 2. Subscribe with role filtering
+            subscribeToRecords(user.email, state.userRole, (records) => {
+                state.records = records;
+                // 3. Fetch active shift
+                getActiveShift(user.email).then(shift => {
+                    state.activeShift = shift;
+                    state.loading = false;
+                    render();
+                });
             });
         });
     } else {
-        state.loading = false; // No hay usuario, no hay nada que cargar
-        state.currentRole = null; // reset role on logout
+        state.loading = false;
+        state.currentRole = null;
         state.currentView = 'roleSelection';
         render();
     }

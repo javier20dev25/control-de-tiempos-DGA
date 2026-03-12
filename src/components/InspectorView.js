@@ -1,3 +1,7 @@
+import { db, saveRecord } from '../utils/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
+import { startShift, endShift, getActiveShift } from '../utils/shifts';
+
 export const InspectorView = (state) => {
     const activeShift = state.activeShift;
     const shiftStartTime = activeShift ? new Date(activeShift.startTime.seconds * 1000) : null;
@@ -68,20 +72,21 @@ export const InspectorView = (state) => {
 };
 
 InspectorView.init = (state, render) => {
-    const { startShift, endShift } = require('../utils/shifts');
     const btnStart = document.getElementById('btn-start-shift-insp');
     const btnEnd = document.getElementById('btn-end-shift-insp');
 
     if (btnStart) {
         btnStart.addEventListener('click', async () => {
-            btnStart.disabled = true;
-            await startShift(state.user.email, 'inspector');
-            import('../utils/shifts').then(({ getActiveShift }) => {
-                getActiveShift(state.user.email).then(shift => {
-                    state.activeShift = shift;
-                    render();
-                });
-            });
+            try {
+                btnStart.disabled = true;
+                await startShift(state.user.email, 'inspector');
+                const shift = await getActiveShift(state.user.email);
+                state.activeShift = shift;
+                render();
+            } catch (err) {
+                alert(err.message || 'Ya hay un inspector activo en el recinto.');
+                btnStart.disabled = false;
+            }
         });
     }
 
@@ -172,12 +177,15 @@ InspectorView.init = (state, render) => {
             btn.innerHTML = '<div class="spinner" style="width:14px; height:14px; border-width:2px; margin-bottom:0;"></div>';
             
             try {
-                const recordRef = doc(db, 'records', docId);
-                await updateDoc(recordRef, {
+                const record = state.records.find(r => r.docId === docId);
+                const updateData = {
+                    ...record,
+                    docId: docId,
                     status: action,
                     inspectorTimestamp: new Date().toISOString(),
                     inspectorEmail: state.user.email
-                });
+                };
+                await saveRecord(updateData, state.user.email);
                 showFeedback(action === 'inspeccionado' ? '¡Inspección aprobada!' : 'Registrado problema documental');
                 searchInput.value = '';
                 // Wait a bit before rendering so the user sees the feedback
@@ -207,13 +215,16 @@ InspectorView.init = (state, render) => {
         btn.innerText = 'Guardando...';
 
         try {
-            const recordRef = doc(db, 'records', selectedDocId);
-            await updateDoc(recordRef, {
+            const record = state.records.find(r => r.docId === selectedDocId);
+            const updateData = {
+                ...record,
+                docId: selectedDocId,
                 status: 'fumigacion',
                 inspectorTimestamp: new Date().toISOString(),
                 inspectorEmail: state.user.email,
                 fumigationDelayHours: parseInt(hours, 10)
-            });
+            };
+            await saveRecord(updateData, state.user.email);
             fumigationModal.style.display = 'none';
             selectedDocId = null;
             showFeedback('Enviado a fumigación');

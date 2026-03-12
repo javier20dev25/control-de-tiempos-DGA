@@ -1,6 +1,43 @@
 import Chart from 'chart.js/auto';
+import { saveRecord, setUserRole, getUsers, db } from '../utils/firebase';
+import { doc, deleteDoc } from 'firebase/firestore';
 
 export const AdminDashboard = (state) => {
+    const activeTab = state.adminTab || 'stats';
+
+    return `
+    <div class="animate-in">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0;">Panel de Control</h2>
+        <div style="display: flex; gap: 8px;">
+            <button class="btn ${activeTab === 'stats' ? 'btn-primary' : 'btn-secondary'}" id="tab-stats" style="padding: 8px 12px; font-size: 0.7rem;">ESTADÍSTICAS</button>
+            <button class="btn ${activeTab === 'users' ? 'btn-primary' : 'btn-secondary'}" id="tab-users" style="padding: 8px 12px; font-size: 0.7rem;">USUARIOS</button>
+            <button class="btn ${activeTab === 'audit' ? 'btn-primary' : 'btn-secondary'}" id="tab-audit" style="padding: 8px 12px; font-size: 0.7rem;">AUDITORÍA</button>
+        </div>
+      </div>
+
+      <div id="admin-content-area">
+        ${activeTab === 'stats' ? renderStats(state) : ''}
+        ${activeTab === 'users' ? renderUsers(state) : ''}
+        ${activeTab === 'audit' ? renderAudit(state) : ''}
+      </div>
+    </div>
+
+    <!-- Modal Edición Registro -->
+    <div id="edit-record-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 2000; padding: 20px;">
+        <div class="card animate-in" style="width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto;">
+            <h3 id="edit-modal-title" style="margin-bottom: 16px; font-size: 1rem;">Editar Registro</h3>
+            <div id="edit-modal-fields" style="display: flex; flex-direction: column; gap: 12px;"></div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-secondary" style="flex: 1;" id="btn-close-edit">CANCELAR</button>
+                <button class="btn btn-primary" style="flex: 1;" id="btn-save-edit">GUARDAR CAMBIOS</button>
+            </div>
+        </div>
+    </div>
+    `;
+};
+
+function renderStats(state) {
     const now = new Date();
     const today7am = new Date(now);
     today7am.setHours(7, 0, 0, 0);
@@ -9,10 +46,7 @@ export const AdminDashboard = (state) => {
     const yesterday7am = new Date(today7am);
     yesterday7am.setDate(yesterday7am.getDate() - 1);
 
-    // Records for Today's Shift
     const recordsToday = state.records.filter(r => new Date(r.timestamp) >= today7am);
-    
-    // Records for Yesterday's Shift
     const recordsYesterday = state.records.filter(r => {
         const d = new Date(r.timestamp);
         return d >= yesterday7am && d < today7am;
@@ -25,38 +59,12 @@ export const AdminDashboard = (state) => {
         pendingInspection: recordsToday.filter(r => r.status === 'en_recinto').length,
         pendingDispatch: recordsToday.filter(r => ['inspeccionado', 'fumigacion', 'problema_documental'].includes(r.status)).length,
         dispatched: recordsToday.filter(r => r.status === 'finalizado').length,
-        inspectedTotal: recordsToday.filter(r => r.inspectorTimestamp).length
     };
 
     const yestTotal = recordsYesterday.length;
     const yestDispatched = recordsYesterday.filter(r => r.status === 'finalizado').length;
 
-    // Calculate bottlenecks for explanation
-    let explanation = "La operación se mantiene estable.";
-    const processed = recordsToday.filter(r => r.t2 && r.t1);
-    const avgTransfer = processed.length > 0
-        ? processed.reduce((acc, r) => acc + (new Date(r.t2) - new Date(r.t1)), 0) / processed.length / (1000 * 60)
-        : 0;
-    
-    if (flowStats.pendingInspection > 5) explanation = "Aviso: Se está acumulando carga en el patio del Julia Herrera. Se requieren más inspecciones.";
-    if (avgTransfer > 45) explanation = "Alerta: El tiempo de traslado desde el Portón 5 es inusualmente alto (Promedio: " + Math.round(avgTransfer) + " min). Posible congestión vial.";
-    if (flowStats.pendingDispatch > 3) explanation = "Aviso: Hay contenedores aprobados esperando despacho final.";
-
     return `
-    <div class="animate-in">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0;">Panel de Control</h2>
-        <div style="display: flex; gap: 8px;">
-            <button class="btn btn-secondary" id="btn-export-full" style="padding: 8px 12px; font-size: 0.75rem;">
-               8 DÍAS
-            </button>
-            <button class="btn btn-primary" id="btn-export-today" style="padding: 8px 12px; font-size: 0.75rem;">
-              <i data-lucide="download" style="width: 14px;"></i> EXCEL HOY
-            </button>
-        </div>
-      </div>
-
-      <!-- Quick Stats Grid -->
       <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px;">
           <div class="card" style="margin-bottom: 0; padding: 12px; border-left: 4px solid var(--primary);">
               <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Entradas P5 Hoy</div>
@@ -66,171 +74,283 @@ export const AdminDashboard = (state) => {
               <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Despachos Hoy</div>
               <div style="font-size: 1.4rem; font-weight: 800;">${flowStats.dispatched}</div>
           </div>
-          <div class="card" style="margin-bottom: 0; padding: 12px; border-left: 4px solid var(--warning);">
-              <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Pend. Inspección</div>
-              <div style="font-size: 1.4rem; font-weight: 800; color: ${flowStats.pendingInspection > 5 ? 'var(--accent)' : 'inherit'}">${flowStats.pendingInspection}</div>
-          </div>
-          <div class="card" style="margin-bottom: 0; padding: 12px; border-left: 4px solid var(--secondary);">
-              <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Pend. Despacho</div>
-              <div style="font-size: 1.4rem; font-weight: 800;">${flowStats.pendingDispatch}</div>
-          </div>
       </div>
 
-      <!-- Dynamic Insight -->
-      <div class="card" style="background: rgba(37,99,235,0.03); border: 1px dashed var(--primary); padding: 12px; margin-bottom: 20px;">
-          <div style="display: flex; gap: 8px; align-items: flex-start;">
-              <i data-lucide="compass" style="width: 18px; color: var(--primary); flex-shrink: 0; margin-top: 2px;"></i>
-              <p style="font-size: 0.8rem; font-weight: 500; margin: 0; line-height: 1.4;">${explanation}</p>
-          </div>
-      </div>
-
-      <!-- Comparison Section -->
       <div style="margin-bottom: 24px;">
-        <h3 style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Comparativa Histórica</h3>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <div class="card" style="padding: 14px; text-align: center; margin-bottom: 0;">
             <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 500;">P5 Ayer</div>
             <div style="font-size: 1.2rem; font-weight: 700;">${yestTotal}</div>
-            <div style="font-size: 0.6rem; color: ${flowStats.enteredP5 >= yestTotal ? 'var(--success)' : 'var(--accent)'}; margin-top: 4px;">
-                ${flowStats.enteredP5 >= yestTotal ? '↑' : '↓'} ${Math.abs(flowStats.enteredP5 - yestTotal)} vs ayer
-            </div>
           </div>
           <div class="card" style="padding: 14px; text-align: center; margin-bottom: 0;">
             <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 500;">Despachos Ayer</div>
             <div style="font-size: 1.2rem; font-weight: 700;">${yestDispatched}</div>
-            <div style="font-size: 0.6rem; color: ${flowStats.dispatched >= yestDispatched ? 'var(--success)' : 'var(--accent)'}; margin-top: 4px;">
-                ${flowStats.dispatched >= yestDispatched ? '↑' : '↓'} ${Math.abs(flowStats.dispatched - yestDispatched)} vs ayer
-            </div>
           </div>
         </div>
       </div>
 
-      <!-- Charts Area -->
       <div class="card">
         <h3 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 16px;">Tiempos de Ciclo (Promedios)</h3>
         <canvas id="cycleChart" style="max-height: 160px;"></canvas>
       </div>
 
-      <div class="card">
+      <div class="card" style="margin-bottom: 0;">
           <h3 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 16px;">Flujo de Hoy por Hora</h3>
           <canvas id="hourlyChart" style="max-height: 160px;"></canvas>
       </div>
+      
+      <div style="margin-top: 16px; display: flex; gap: 8px;">
+          <button class="btn btn-secondary" id="btn-export-full" style="flex:1; padding: 10px; font-size: 0.75rem;">REPORTE 8 DÍAS</button>
+          <button class="btn btn-primary" id="btn-export-today" style="flex:1; padding: 10px; font-size: 0.75rem;">REPORTE HOY</button>
+      </div>
+    `;
+}
 
-      <div class="card">
-        <h3 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 12px;">Últimos Movimientos</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Cont.</th>
-                    <th>Estado</th>
-                    <th>Actual</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${state.records.slice(0, 10).map(r => {
-                    const statusMap = {
-                        'en_transito': { text: 'Tránsito', color: 'var(--text-muted)' },
-                        'en_recinto': { text: 'Recinto', color: 'var(--warning)' },
-                        'inspeccionado': { text: 'Aprobado', color: 'var(--success)' },
-                        'fumigacion': { text: 'Fumig.', color: 'var(--accent)' },
-                        'problema_documental': { text: 'Doc Error', color: 'var(--warning)' },
-                        'finalizado': { text: 'Salida', color: 'var(--success)' }
-                    };
-                    const s = statusMap[r.status] || { text: 'Desconocido', color: 'var(--text)' };
-                    
-                    return `
-                    <tr>
-                        <td style="font-family: monospace; font-weight: 700; font-size: 0.8rem;">${r.containerId || ''}</td>
-                        <td>
-                            <span style="font-size: 0.7rem; font-weight: 600; color: ${s.color}; text-transform: uppercase;">
-                                ${s.text}
-                            </span>
-                        </td>
-                        <td style="font-size: 10px; color: var(--text-muted);">${new Date(r.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
-                    </tr>
-                    `;
-                }).join('')}
-            </tbody>
+function renderUsers(state) {
+    const users = state.allUsers || [];
+    return `
+    <div class="card">
+      <h3 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 16px;">Gestión de Funcionarios</h3>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        ${users.length === 0 ? '<div style="color:var(--text-muted); font-size: 0.8rem; text-align:center;">Cargando usuarios...</div>' : users.map(u => `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
+            <div>
+              <div style="font-size: 0.85rem; font-weight: 700;">${u.email}</div>
+              <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">${u.role || 'inspector'}</div>
+            </div>
+            <select class="user-role-select" data-email="${u.email}" style="padding: 4px 8px; font-size: 0.7rem; border-radius: 4px; border: 1px solid var(--border);">
+              <option value="inspector" ${u.role === 'inspector' ? 'selected' : ''}>Inspector</option>
+              <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Administrador</option>
+            </select>
+          </div>
+        `).join('')}
+      </div>
+      <div style="margin-top: 16px; padding: 10px; background: rgba(37,99,235,0.05); border-radius: 8px; font-size: 0.7rem; color: var(--text-muted);">
+        <i data-lucide="info" style="width: 12px; margin-right: 4px; display: inline-block; vertical-align: middle;"></i>
+        Los cambios de rango se aplican al próximo inicio de sesión del usuario.
+      </div>
+    </div>
+    `;
+}
+
+function renderAudit(state) {
+    return `
+    <div class="card" style="padding: 0; overflow: hidden;">
+      <div style="padding: 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="font-size: 0.9rem; font-weight: 700; margin: 0;">Auditoría de Registros</h3>
+        <input type="text" id="audit-search" placeholder="Buscar Contenedor..." style="width: 150px; font-size: 0.75rem; padding: 6px 10px; border-radius: 20px; border: 1px solid var(--border);">
+      </div>
+      <div style="max-height: 400px; overflow-y: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead style="position: sticky; top: 0; background: var(--bg); z-index: 10;">
+            <tr style="border-bottom: 1px solid var(--border);">
+              <th style="padding: 10px; font-size: 0.65rem; text-align: left;">CONT.</th>
+              <th style="padding: 10px; font-size: 0.65rem; text-align: center;">ESTADO</th>
+              <th style="padding: 10px; font-size: 0.65rem; text-align: right;">ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody id="audit-table-body">
+            ${renderAuditRows(state.records)}
+          </tbody>
         </table>
       </div>
     </div>
     `;
+}
+
+function renderAuditRows(records, filter = '') {
+    const filtered = filter ? records.filter(r => r.containerId?.includes(filter.toUpperCase())) : records;
+    return filtered.slice(0, 50).map(r => `
+      <tr style="border-bottom: 1px solid var(--border);">
+        <td style="padding: 10px; font-family: monospace; font-size: 0.75rem; font-weight: 700;">${r.containerId}</td>
+        <td style="padding: 10px; text-align: center;">
+            <span style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">${r.status}</span>
+        </td>
+        <td style="padding: 10px; text-align: right;">
+            <button class="btn-edit-record" data-docid="${r.docId}" style="background: none; border: none; color: var(--primary); cursor: pointer; padding: 4px;"><i data-lucide="edit-2" style="width: 14px;"></i></button>
+            <button class="btn-delete-record" data-docid="${r.docId}" style="background: none; border: none; color: var(--accent); cursor: pointer; padding: 4px;"><i data-lucide="trash-2" style="width: 14px;"></i></button>
+        </td>
+      </tr>
+    `).join('');
+}
+
+AdminDashboard.init = async (state, render) => {
+    // 1. Fetch Users if in users tab
+    if (state.adminTab === 'users' && !state.allUsers) {
+        state.allUsers = await getUsers();
+        render();
+        return;
+    }
+
+    // 2. Tab switching logic
+    document.getElementById('tab-stats')?.addEventListener('click', () => { state.adminTab = 'stats'; render(); });
+    document.getElementById('tab-users')?.addEventListener('click', () => { state.adminTab = 'users'; render(); });
+    document.getElementById('tab-audit')?.addEventListener('click', () => { state.adminTab = 'audit'; render(); });
+
+    // 3. User Role Management
+    document.querySelectorAll('.user-role-select').forEach(select => {
+        select.addEventListener('change', async (e) => {
+            const email = e.target.dataset.email;
+            const newRole = e.target.value;
+            if (confirm(`¿Cambiar rango de ${email} a ${newRole}?`)) {
+                await setUserRole(email, newRole);
+                state.allUsers = await getUsers();
+                render();
+            } else {
+                e.target.value = select.value;
+            }
+        });
+    });
+
+    // 4. Audit Search
+    const auditSearch = document.getElementById('audit-search');
+    if (auditSearch) {
+        auditSearch.addEventListener('input', (e) => {
+            const tbody = document.getElementById('audit-table-body');
+            tbody.innerHTML = renderAuditRows(state.records, e.target.value);
+            import('lucide').then(({ createIcons, Edit2, Trash2 }) => createIcons({ icons: { Edit2, Trash2 } }));
+        });
+    }
+
+    // 5. Record Editing
+    document.querySelectorAll('.btn-edit-record').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const docId = btn.dataset.docid;
+            const record = state.records.find(r => r.docId === docId);
+            openEditModal(record, state, render);
+        });
+    });
+
+    document.querySelectorAll('.btn-delete-record').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const docId = btn.dataset.docid;
+            if (confirm('¿ELIMINAR este registro? Esta acción es irreversible.')) {
+                await deleteDoc(doc(db, "records", docId));
+                // Snapshot listener handles update
+            }
+        });
+    });
+
+    // 6. Charts (only in stats tab)
+    if (state.adminTab === 'stats' || !state.adminTab) {
+        initCharts(state);
+    }
+
+    // 7. Exports
+    initExports(state);
+
+    import('lucide').then(({ createIcons, Download, Edit2, Trash2, Info }) => {
+        createIcons({ icons: { Download, Edit2, Trash2, Info } });
+    });
 };
 
-AdminDashboard.init = (state) => {
+function openEditModal(record, state, render) {
+    const modal = document.getElementById('edit-record-modal');
+    const fieldsArea = document.getElementById('edit-modal-fields');
+    const title = document.getElementById('edit-modal-title');
+    
+    title.innerText = `Editando ${record.containerId}`;
+    modal.style.display = 'flex';
+
+    const stages = [
+        { key: 't1', label: '1. Portón 5 (Entrada)', value: record.t1 },
+        { key: 't2', label: '2. Julia Herrera (Llegada)', value: record.t2 },
+        { key: 'inspectorTimestamp', label: '3. Inspeccionado', value: record.inspectorTimestamp },
+        { key: 't3', label: '4. Julia Herrera (Salida)', value: record.t3 }
+    ];
+
+    fieldsArea.innerHTML = `
+        <div class="input-group" style="margin-bottom:0;">
+            <label>ID Contenedor</label>
+            <input type="text" id="edit-container-id" value="${record.containerId}">
+        </div>
+        <div class="input-group" style="margin-bottom:0;">
+            <label>Declaración / Placa</label>
+            <input type="text" id="edit-declaration" value="${record.declaration || ''}">
+        </div>
+        <div style="font-size: 0.75rem; font-weight: 700; margin-top: 8px; color: var(--text-muted);">HITOS DE TIEMPO (Check para activar)</div>
+        ${stages.map(s => `
+            <div style="display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+                <input type="checkbox" id="check-${s.key}" ${s.value ? 'checked' : ''} style="width: 20px; height: 20px;">
+                <div style="flex: 1;">
+                    <div style="font-size: 0.7rem; font-weight: 700;">${s.label}</div>
+                    <div style="font-size: 10px; color: var(--text-muted);">${s.value ? new Date(s.value).toLocaleString() : 'Pendiente'}</div>
+                </div>
+            </div>
+        `).join('')}
+    `;
+
+    document.getElementById('btn-close-edit').onclick = () => modal.style.display = 'none';
+    document.getElementById('btn-save-edit').onclick = async () => {
+        const updateData = {
+            ...record,
+            containerId: document.getElementById('edit-container-id').value,
+            declaration: document.getElementById('edit-declaration').value,
+        };
+
+        stages.forEach(s => {
+            const isChecked = document.getElementById(`check-${s.key}`).checked;
+            if (isChecked && !record[s.key]) {
+                updateData[s.key] = new Date().toISOString();
+            } else if (!isChecked) {
+                updateData[s.key] = null;
+            }
+        });
+
+        // Derive status
+        if (updateData.t3) updateData.status = 'finalizado';
+        else if (updateData.inspectorTimestamp) updateData.status = 'inspeccionado';
+        else if (updateData.t2) updateData.status = 'en_recinto';
+        else updateData.status = 'en_transito';
+
+        modal.style.display = 'none';
+        await saveRecord(updateData, state.user.email);
+    };
+}
+
+function initCharts(state) {
     const cycleCtx = document.getElementById('cycleChart');
     const hourlyCtx = document.getElementById('hourlyChart');
     if (!cycleCtx || !hourlyCtx) return;
 
-    // --- Cycle Chart Calculation ---
-    const recordsWithT2T1 = state.records.filter(r => r.t2 && r.t1);
-    const avgTraslado = recordsWithT2T1.length > 0
-        ? recordsWithT2T1.reduce((acc, r) => acc + (new Date(r.t2) - new Date(r.t1)), 0) / recordsWithT2T1.length / (1000 * 60)
-        : 0;
-
-    const recordsWithInspT2 = state.records.filter(r => r.inspectorTimestamp && r.t2);
-    const avgInspector = recordsWithInspT2.length > 0
-        ? recordsWithInspT2.reduce((acc, r) => acc + (new Date(r.inspectorTimestamp) - new Date(r.t2)), 0) / recordsWithInspT2.length / (1000 * 60)
-        : 0;
+    // Cycle Calculations
+    const rT2T1 = state.records.filter(r => r.t2 && r.t1);
+    const avgT = rT2T1.length ? rT2T1.reduce((a, r) => a + (new Date(r.t2)-new Date(r.t1)), 0)/rT2T1.length/60000 : 0;
+    const rInsT2 = state.records.filter(r => r.inspectorTimestamp && r.t2);
+    const avgI = rInsT2.length ? rInsT2.reduce((a, r) => a + (new Date(r.inspectorTimestamp)-new Date(r.t2)), 0)/rInsT2.length/60000 : 0;
 
     new Chart(cycleCtx, {
         type: 'bar',
         data: {
             labels: ['P5 → JH', 'Inspección'],
             datasets: [{
-                data: [avgTraslado, avgInspector],
+                data: [avgT, avgI],
                 backgroundColor: ['#2563eb33', '#10b98133'],
                 borderColor: ['#2563eb', '#10b981'],
                 borderWidth: 1.5,
                 borderRadius: 4,
             }]
         },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { beginAtZero: true, title: { display: true, text: 'Minutos', font: { size: 10 } } },
-                y: { grid: { display: false } }
-            }
-        }
+        options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
     });
 
-    // --- Hourly Chart Calculation ---
     const hours = Array.from({length: 24}, (_, i) => i);
-    const hourlyData = hours.map(h => {
-        return state.records.filter(r => {
-            const d = new Date(r.timestamp);
-            const isToday = d.toDateString() === new Date().toDateString();
-            return isToday && d.getHours() === h;
-        }).length;
-    });
+    const hourlyData = hours.map(h => state.records.filter(r => {
+        const d = new Date(r.timestamp);
+        return d.toDateString() === new Date().toDateString() && d.getHours() === h;
+    }).length);
 
     new Chart(hourlyCtx, {
         type: 'line',
         data: {
             labels: hours.map(h => `${h}h`),
-            datasets: [{
-                label: 'Entradas',
-                data: hourlyData,
-                borderColor: '#2563eb',
-                tension: 0.3,
-                fill: true,
-                backgroundColor: '#2563eb11',
-                pointRadius: 0
-            }]
+            datasets: [{ label: 'Entradas', data: hourlyData, borderColor: '#2563eb', tension: 0.3, fill: true, backgroundColor: '#2563eb11', pointRadius: 0 }]
         },
-        options: {
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } },
-                x: { grid: { display: false }, ticks: { font: { size: 9 }, maxTicksLimit: 8 } }
-            }
-        }
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
     });
+}
 
-    // --- Export Logic ---
+function initExports(state) {
     const exportCSV = (records, filename) => {
         const headers = ['Contenedor', 'Régimen', 'Entrada P5', 'Llegada JH', 'Inspeccionado', 'Salida', 'Estado', 'Creado Por'];
         const rows = records.map(r => [
@@ -244,30 +364,22 @@ AdminDashboard.init = (state) => {
             r.createdBy || ''
         ]);
 
-        let csvContent = "data:text/csv;charset=utf-8,\ufeff" 
-            + headers.join(",") + "\n"
-            + rows.map(e => e.join(",")).join("\n");
-
-        const encodedUri = encodeURI(csvContent);
+        let csvContent = "data:text/csv;charset=utf-8,\ufeff" + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
         const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
+        link.setAttribute("href", encodeURI(csvContent));
         link.setAttribute("download", filename);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     };
 
-    document.getElementById('btn-export-today').addEventListener('click', () => {
-        const now = new Date();
-        const today7am = new Date(now);
-        today7am.setHours(7, 0, 0, 0);
-        if (now.getHours() < 7) today7am.setDate(today7am.getDate() - 1);
-
-        const recordsToday = state.records.filter(r => new Date(r.timestamp) >= today7am);
-        exportCSV(recordsToday, `reporte_hoy_desde_7am_${new Date().toISOString().split('T')[0]}.csv`);
+    document.getElementById('btn-export-today')?.addEventListener('click', () => {
+        const d = new Date(); d.setHours(7,0,0,0);
+        if (new Date().getHours() < 7) d.setDate(d.getDate()-1);
+        exportCSV(state.records.filter(r => new Date(r.timestamp) >= d), `reporte_hoy.csv`);
     });
 
-    document.getElementById('btn-export-full').addEventListener('click', () => {
-        exportCSV(state.records, `reporte_8_dias_completo_${new Date().toISOString().split('T')[0]}.csv`);
+    document.getElementById('btn-export-full')?.addEventListener('click', () => {
+        exportCSV(state.records, `reporte_8_dias.csv`);
     });
-};
+}

@@ -1,3 +1,7 @@
+import { db, saveRecord } from '../utils/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
+import { startShift, endShift, getActiveShift } from '../utils/shifts';
+
 export const JHIngresoView = (state) => {
   const activeShift = state.activeShift;
   const shiftStartTime = activeShift ? new Date(activeShift.startTime.seconds * 1000) : null;
@@ -70,20 +74,21 @@ export const JHIngresoView = (state) => {
 };
 
 JHIngresoView.init = (state, render) => {
-  const { startShift, endShift } = require('../utils/shifts');
   const btnStart = document.getElementById('btn-start-shift-jh-in');
   const btnEnd = document.getElementById('btn-end-shift-jh-in');
 
   if (btnStart) {
     btnStart.addEventListener('click', async () => {
-      btnStart.disabled = true;
-      await startShift(state.user.email, 'jh-in');
-      import('../utils/shifts').then(({ getActiveShift }) => {
-        getActiveShift(state.user.email).then(shift => {
-          state.activeShift = shift;
-          render();
-        });
-      });
+      try {
+        btnStart.disabled = true;
+        await startShift(state.user.email, 'jh-in');
+        const shift = await getActiveShift(state.user.email);
+        state.activeShift = shift;
+        render();
+      } catch (err) {
+        alert(err.message || 'El puesto Julia Herrera (Ingreso) ya está ocupado.');
+        btnStart.disabled = false;
+      }
     });
   }
 
@@ -146,12 +151,15 @@ JHIngresoView.init = (state, render) => {
         try {
           btn.disabled = true;
           btn.innerHTML = '<div class="spinner" style="width:14px; height:14px; border-width:2px; margin-bottom:0;"></div>';
-          const recordRef = doc(db, "records", docId);
-          await updateDoc(recordRef, {
+          const record = state.records.find(r => r.docId === docId);
+          const updateData = {
+            ...record,
+            docId: docId,
             t2: new Date().toISOString(),
             status: 'en_recinto',
             arrivedAtJHBy: state.user.email
-          });
+          };
+          await saveRecord(updateData, state.user.email);
           showFeedback('✓ Llegada registrada');
           searchInput.value = '';
           setTimeout(() => render(), 1000);

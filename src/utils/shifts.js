@@ -1,8 +1,32 @@
 import { db } from './firebase';
 import { collection, addDoc, query, where, getDocs, updateDoc, doc, serverTimestamp, limit, orderBy } from "firebase/firestore";
 
+export const isPositionOccupied = async (role) => {
+    try {
+        const q = query(
+            collection(db, "shifts"),
+            where("role", "==", role),
+            where("status", "==", "active"),
+            limit(1)
+        );
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            return querySnapshot.docs[0].data().userEmail;
+        }
+        return null;
+    } catch (e) {
+        console.error("Error checking position occupancy: ", e);
+        return null;
+    }
+};
+
 export const startShift = async (userEmail, role) => {
     try {
+        const occupiedBy = await isPositionOccupied(role);
+        if (occupiedBy && occupiedBy !== userEmail) {
+            throw new Error(`Esta posición ya está ocupada por ${occupiedBy}. El funcionario anterior debe cerrar su sesión.`);
+        }
+
         const shiftData = {
             userEmail,
             role,
@@ -36,7 +60,6 @@ export const getActiveShift = async (userEmail) => {
             collection(db, "shifts"),
             where("userEmail", "==", userEmail),
             where("status", "==", "active"),
-            orderBy("startTime", "desc"),
             limit(1)
         );
         const querySnapshot = await getDocs(q);

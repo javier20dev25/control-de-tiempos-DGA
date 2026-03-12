@@ -1,3 +1,7 @@
+import { db, saveRecord } from '../utils/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
+import { startShift, endShift, getActiveShift } from '../utils/shifts';
+
 export const Gate5View = (state) => {
   const activeShift = state.activeShift;
   
@@ -110,25 +114,24 @@ export const Gate5View = (state) => {
 };
 
 Gate5View.init = (state, render) => {
-  const { startShift, endShift } = require('../utils/shifts');
-  const { db } = require('../utils/firebase');
-  const { doc, updateDoc } = require('firebase/firestore');
-
   // Handle Shift Actions
   const btnStart = document.getElementById('btn-start-shift-g5');
   const btnEnd = document.getElementById('btn-end-shift-g5');
 
   if (btnStart) {
     btnStart.addEventListener('click', async () => {
-      btnStart.disabled = true;
-      await startShift(state.user.email, 'gate5');
-      // Update state and re-render
-      import('../utils/shifts').then(({ getActiveShift }) => {
-        getActiveShift(state.user.email).then(shift => {
-          state.activeShift = shift;
-          render();
-        });
-      });
+      try {
+        btnStart.disabled = true;
+        btnStart.innerText = 'Iniciando...';
+        await startShift(state.user.email, 'gate5');
+        const shift = await getActiveShift(state.user.email);
+        state.activeShift = shift;
+        render();
+      } catch (err) {
+        alert(err.message || 'Error al iniciar turno. Verifique si el puesto ya está ocupado.');
+        btnStart.disabled = false;
+        btnStart.innerText = 'EMPEZAR TURNO';
+      }
     });
   }
 
@@ -211,7 +214,7 @@ Gate5View.init = (state, render) => {
           status: 'en_transito',
           createdBy: state.user.email,
         };
-        await saveRecord(record);
+        await saveRecord(record, state.user.email);
         showFeedback('✓ Salida registrada');
       }
 
