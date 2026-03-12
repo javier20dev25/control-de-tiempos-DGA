@@ -1,4 +1,4 @@
-import { createIcons, LogOut, LogIn, BarChart2, Camera, Plus, Trash2, Edit2, Search, ChevronRight, ArrowLeft } from 'lucide';
+import { createIcons, LogOut, LogIn, BarChart2, Camera, Plus, Trash2, Edit2, Search, ChevronRight, ArrowLeft, Package, Truck, CheckCircle, Compass, Check, AlertTriangle, Wind, FileWarning } from 'lucide';
 import './style.css';
 import { Gate5View } from './components/Gate5View';
 import { JHIngresoView } from './components/JHIngresoView';
@@ -63,7 +63,7 @@ function render() {
     }
 
     createIcons({
-        icons: { LogOut, LogIn, BarChart2, Camera, Plus, Trash2, Edit2, Search, ChevronRight, ArrowLeft }
+        icons: { LogOut, LogIn, BarChart2, Camera, Plus, Trash2, Edit2, Search, ChevronRight, ArrowLeft, Package, Truck, CheckCircle, Compass, Check, AlertTriangle, Wind, FileWarning }
     });
 }
 

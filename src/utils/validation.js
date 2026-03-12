@@ -4,9 +4,11 @@
  */
 
 export const validateContainer = (containerId) => {
+    // Enforce format: 4 uppercase letters + 7 digits
     const regex = /^[A-Z]{4}[0-9]{7}$/;
     if (!regex.test(containerId)) return false;
 
+    // Check digit validation (ISO 6346) - WARNING only, not blocking
     const charCode = (char) => {
         const code = char.charCodeAt(0);
         if (code >= 48 && code <= 57) return code - 48; // 0-9
@@ -25,7 +27,11 @@ export const validateContainer = (containerId) => {
     }
 
     const checkDigit = (sum % 11) % 10;
-    return checkDigit === parseInt(containerId[10]);
+    if (checkDigit !== parseInt(containerId[10])) {
+        console.warn(`ISO 6346: Check digit mismatch for ${containerId} (expected ${checkDigit}, got ${containerId[10]}). Allowing anyway.`);
+    }
+
+    return true; // Allow if format is correct
 };
 
 export const sanitizeContainer = (text) => {
