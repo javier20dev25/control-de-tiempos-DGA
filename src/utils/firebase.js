@@ -12,7 +12,7 @@ export const firebaseConfig = {
 
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "firebase/firestore";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 const app = initializeApp(firebaseConfig);
@@ -28,12 +28,16 @@ export const googleProvider = new GoogleAuthProvider();
 // Data Persistence Layer - Firebase Implementation
 export const saveRecord = async (record) => {
     try {
-        await addDoc(collection(db, "records"), {
+        // Use containerId as the document ID for easy referencing across views
+        const docId = record.containerId + '_' + record.timestamp;
+        await setDoc(doc(db, "records", docId), {
             ...record,
             serverTimestamp: new Date()
         });
+        return docId;
     } catch (e) {
         console.error("Error adding document: ", e);
+        throw e;
     }
 };
 
@@ -41,8 +45,8 @@ export const subscribeToRecords = (callback) => {
     const q = query(collection(db, "records"), orderBy("timestamp", "desc"));
     return onSnapshot(q, (querySnapshot) => {
         const records = [];
-        querySnapshot.forEach((doc) => {
-            records.push({ id: doc.id, ...doc.data() });
+        querySnapshot.forEach((docSnap) => {
+            records.push({ docId: docSnap.id, ...docSnap.data() });
         });
         callback(records);
     });

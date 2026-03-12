@@ -25,14 +25,14 @@ JHSalidaView.init = (state, render) => {
   const resultsDir = document.getElementById('search-results-out');
 
   const getStatusBadge = (status, fumigationHours) => {
-      if (status === 'inspeccionado') return `<span style="background: rgba(16,185,129,0.1); color: var(--success); padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;">Inspeccionado</span>`;
+      if (status === 'inspeccionado') return `<span style="background: rgba(16,185,129,0.1); color: var(--success); padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;">Aprobado</span>`;
       if (status === 'fumigacion') return `<span style="background: rgba(239,68,68,0.1); color: var(--accent); padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;">Fumigación (${fumigationHours}h)</span>`;
       if (status === 'problema_documental') return `<span style="background: rgba(245,158,11,0.1); color: var(--warning); padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;">Problema Doc.</span>`;
       return '';
   };
 
   searchInput.addEventListener('input', (e) => {
-    const query = e.target.value;
+    const query = e.target.value.toUpperCase();
     if (query.length < 2) return;
 
     const allowedStatuses = ['inspeccionado', 'fumigacion', 'problema_documental'];
@@ -64,11 +64,11 @@ JHSalidaView.init = (state, render) => {
       <div class="card" style="padding: 16px; margin-bottom: 10px;">
         <div style="margin-bottom: 12px;">
           <div style="font-weight: 700; font-family: monospace; font-size: 1.1rem; color: var(--primary);">${r.containerId}</div>
-          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">${r.placa || ''} | ${new Date(r.timestamp).toLocaleTimeString()}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">${r.regime || ''} | ${r.declaration || 'S/D'}</div>
           <div style="margin-top: 8px;">${getStatusBadge(r.status, r.fumigationDelayHours)}</div>
         </div>
         
-        <button class="btn btn-primary btn-dispatch" data-id="${r.id}" style="width: 100%; background: var(--success); font-size: 0.85rem;">
+        <button class="btn btn-primary btn-dispatch" data-docid="${r.docId}" style="width: 100%; background: var(--success); font-size: 0.85rem;">
           <i data-lucide="log-out" style="width: 16px;"></i>
           SALIDA DEFINITIVA
         </button>
@@ -80,18 +80,19 @@ JHSalidaView.init = (state, render) => {
     document.querySelectorAll('.btn-dispatch').forEach(btn => {
       btn.addEventListener('click', async () => {
         if(!confirm('¿Confirmar salida definitiva?')) return;
-        const id = btn.dataset.id;
+        const docId = btn.dataset.docid;
         try {
             btn.disabled = true;
             btn.innerText = 'Despachando...';
-            const recordRef = doc(db, "records", id);
+            const recordRef = doc(db, "records", docId);
             await updateDoc(recordRef, {
                 status: 'finalizado',
+                t3: new Date().toISOString(),
                 salidaTimestamp: new Date().toISOString(),
                 salidaUserEmail: state.user.email
             });
             searchInput.value = '';
-            resultsDir.innerHTML = `<div style="color: var(--success); text-align: center; padding: 20px; font-weight: 600;">¡Despacho Exitoso!</div>`;
+            resultsDir.innerHTML = `<div style="color: var(--success); text-align: center; padding: 20px; font-weight: 600;">✓ Despacho Exitoso</div>`;
         } catch (error) {
             alert('Error: ' + error.message);
             btn.disabled = false;

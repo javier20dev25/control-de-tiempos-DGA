@@ -2,8 +2,8 @@ import Chart from 'chart.js/auto';
 
 export const AdminDashboard = (state) => {
     const totalP5 = state.records.length;
-    const inRecinto = state.records.filter(r => r.t2 && !r.t3).length;
-    const inTransit = state.records.filter(r => r.t1 && !r.t2).length;
+    const inRecinto = state.records.filter(r => r.status === 'en_recinto').length;
+    const inTransit = state.records.filter(r => r.status === 'en_transito').length;
     const dispatched = state.records.filter(r => r.status === 'finalizado').length;
     const fumigados = state.records.filter(r => r.fumigationDelayHours).length;
     const problemasDocs = state.records.filter(r => r.status === 'problema_documental').length;
@@ -64,7 +64,7 @@ export const AdminDashboard = (state) => {
     
     return `
                     <tr>
-                        <td style="font-family: monospace; font-weight: 600;">${r.containerId || r.id}</td>
+                        <td style="font-family: monospace; font-weight: 600;">${r.containerId || ''}</td>
                         <td>
                             <span style="background: var(--bg); padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; border: 1px solid var(--border);">
                                 ${displayStatus}

@@ -15,10 +15,8 @@ export const sanitizeContainer = (text) => {
     // First 4 characters must be letters (Owner Code + Category Identifier)
     let lettersPart = cleanText.substring(0, 4)
         .replace(/0/g, "O")
-        .replace(/1/g, "I")
         .replace(/5/g, "S")
         .replace(/8/g, "B")
-        .replace(/2/g, "Z")
         .replace(/[^A-Z]/g, ""); // Ensure strictly letters
 
     // Remaining characters must be digits (Serial Number + Check Digit)

@@ -1,6 +1,11 @@
 import { validateContainer, sanitizeContainer } from '../utils/validation';
+import { saveRecord, db } from '../utils/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 
-export const Gate5View = (state) => `
+export const Gate5View = (state) => {
+  const recentRecords = state.records.filter(r => !r.t3).slice(0, 5);
+
+  return `
   <div class="animate-in">
     <div class="card">
       <h2 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 16px;">Portón 5 — Salida</h2>
@@ -39,6 +44,8 @@ export const Gate5View = (state) => `
         </div>
       </div>
 
+      <div id="feedback-msg" style="display: none; padding: 10px; border-radius: 8px; margin-bottom: 12px; text-align: center; font-size: 0.85rem; font-weight: 600;"></div>
+
       <button class="btn btn-primary" style="width: 100%;" id="btn-add">
         <i data-lucide="plus" style="width: 18px;"></i>
         REGISTRAR SALIDA
@@ -53,31 +60,53 @@ export const Gate5View = (state) => `
     <div class="card">
       <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 12px;">Recientes</h3>
       <div id="recent-list">
-        ${state.records.filter(r => !r.t3).slice(-5).reverse().map(r => `
+        ${recentRecords.length === 0 ? '<div style="color: var(--text-muted); text-align: center; padding: 16px; font-size: 0.85rem;">Sin registros aún</div>' : ''}
+        ${recentRecords.map(r => `
           <div style="padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <div style="font-weight: 600; font-size: 0.9rem;">${r.id}</div>
-              <div style="font-size: 0.75rem; color: var(--text-muted);">${r.regime} | ${r.declaration || 'S/D'}</div>
+              <div style="font-weight: 600; font-size: 0.9rem; font-family: monospace;">${r.containerId || r.id}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">${r.regime || ''} | ${r.declaration || 'S/D'}</div>
             </div>
-            <button class="btn-icon btn-delete" data-id="${r.timestamp}" style="color: var(--accent);">
+            <div style="display: flex; gap: 6px;">
+              <button class="btn-icon btn-edit" data-docid="${r.docId}" data-container="${r.containerId}" data-declaration="${r.declaration || ''}" data-regime="${r.regime || ''}" style="color: var(--primary);">
+                <i data-lucide="edit-2" style="width: 16px;"></i>
+              </button>
+              <button class="btn-icon btn-delete" data-docid="${r.docId}" style="color: var(--accent);">
                 <i data-lucide="trash-2" style="width: 16px;"></i>
-            </button>
+              </button>
+            </div>
           </div>
         `).join('')}
       </div>
     </div>
   </div>
-`;
+  `;
+};
 
 Gate5View.init = (state, render) => {
   let selectedRegime = null;
+  let editingDocId = null; // Track if we're editing an existing record
   const containerInput = document.getElementById('container-input');
   const declarationInput = document.getElementById('declaration-input');
+  const feedbackMsg = document.getElementById('feedback-msg');
 
+  const showFeedback = (msg, isError = false) => {
+    feedbackMsg.textContent = msg;
+    feedbackMsg.style.display = 'block';
+    feedbackMsg.style.background = isError ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)';
+    feedbackMsg.style.color = isError ? 'var(--accent)' : 'var(--success)';
+    setTimeout(() => { feedbackMsg.style.display = 'none'; }, 3000);
+  };
+
+  // Regime selection + auto-fill declaration
   document.querySelectorAll('.regime-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.regime-btn').forEach(b => b.classList.replace('btn-primary', 'btn-secondary'));
-      btn.classList.replace('btn-secondary', 'btn-primary');
+      document.querySelectorAll('.regime-btn').forEach(b => {
+        b.classList.remove('btn-primary');
+        b.classList.add('btn-secondary');
+      });
+      btn.classList.remove('btn-secondary');
+      btn.classList.add('btn-primary');
       selectedRegime = btn.dataset.regime;
 
       if (selectedRegime === 'VERDE') declarationInput.value = 'L-';
@@ -91,41 +120,102 @@ Gate5View.init = (state, render) => {
     e.target.value = sanitizeContainer(e.target.value);
   });
 
+  // Register / Save
   document.getElementById('btn-add').addEventListener('click', async () => {
     const containerId = containerInput.value;
     const declaration = declarationInput.value;
 
-    if (!selectedRegime) return alert('Seleccione un régimen');
-    if (!validateContainer(containerId)) return alert('Formato inválido: 4 letras + 7 dígitos');
+    if (!selectedRegime) { showFeedback('Seleccione un régimen', true); return; }
+    if (!validateContainer(containerId)) { showFeedback('Formato: 4 letras + 7 dígitos', true); return; }
 
-    const record = {
-      id: containerId,
-      regime: selectedRegime,
-      declaration: declaration,
-      t1: new Date().toISOString(),
-      timestamp: Date.now(),
-      createdBy: state.user.email,
-    };
+    const btnAdd = document.getElementById('btn-add');
+    btnAdd.disabled = true;
+    btnAdd.innerHTML = 'Guardando...';
 
-    import('../utils/firebase').then(({ saveRecord }) => {
-      saveRecord(record);
-    });
+    try {
+      if (editingDocId) {
+        // Update existing record (keep original timestamps)
+        const recordRef = doc(db, "records", editingDocId);
+        await updateDoc(recordRef, {
+          containerId: containerId,
+          declaration: declaration,
+          regime: selectedRegime,
+          editedBy: state.user.email,
+          editedAt: new Date().toISOString()
+        });
+        showFeedback('✓ Registro actualizado');
+        editingDocId = null;
+        btnAdd.innerHTML = '<i data-lucide="plus" style="width: 18px;"></i> REGISTRAR SALIDA';
+      } else {
+        // New record
+        const record = {
+          containerId: containerId,
+          regime: selectedRegime,
+          declaration: declaration,
+          t1: new Date().toISOString(),
+          timestamp: Date.now(),
+          status: 'en_transito',
+          createdBy: state.user.email,
+        };
+        await saveRecord(record);
+        showFeedback('✓ Salida registrada');
+      }
 
-    containerInput.value = '';
-    declarationInput.value = '';
-    alert('Salida registrada');
+      containerInput.value = '';
+      declarationInput.value = '';
+      selectedRegime = null;
+      document.querySelectorAll('.regime-btn').forEach(b => {
+        b.classList.remove('btn-primary');
+        b.classList.add('btn-secondary');
+      });
+    } catch (err) {
+      showFeedback('Error al guardar: ' + err.message, true);
+    }
+
+    btnAdd.disabled = false;
+    // Re-render icons
+    import('lucide').then(({ createIcons, Plus }) => createIcons({ icons: { Plus } }));
   });
 
+  // Edit button
+  document.querySelectorAll('.btn-edit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      editingDocId = btn.dataset.docid;
+      containerInput.value = btn.dataset.container || '';
+      declarationInput.value = btn.dataset.declaration || '';
+      const regime = btn.dataset.regime;
+      
+      // Select the matching regime button
+      document.querySelectorAll('.regime-btn').forEach(b => {
+        b.classList.remove('btn-primary');
+        b.classList.add('btn-secondary');
+        if (b.dataset.regime === regime) {
+          b.classList.remove('btn-secondary');
+          b.classList.add('btn-primary');
+          selectedRegime = regime;
+        }
+      });
+
+      const btnAdd = document.getElementById('btn-add');
+      btnAdd.innerHTML = '<i data-lucide="edit-2" style="width: 18px;"></i> GUARDAR CAMBIOS';
+      import('lucide').then(({ createIcons, Edit2 }) => createIcons({ icons: { Edit2 } }));
+
+      containerInput.focus();
+      showFeedback('Editando registro — modifique y guarde');
+    });
+  });
+
+  // Delete button
   document.querySelectorAll('.btn-delete').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (!confirm('¿Eliminar este registro?')) return;
-      const id = btn.dataset.id;
-      const record = state.records.find(r => r.timestamp == id);
-      if (record) {
-        import('../utils/firebase').then(async ({ db }) => {
-          const { doc, deleteDoc } = await import('firebase/firestore');
-          await deleteDoc(doc(db, "records", record.id));
-        });
+      const docId = btn.dataset.docid;
+      try {
+        const { deleteDoc } = await import('firebase/firestore');
+        await deleteDoc(doc(db, "records", docId));
+        showFeedback('Registro eliminado');
+      } catch (err) {
+        showFeedback('Error al eliminar', true);
       }
     });
   });
@@ -150,17 +240,16 @@ Gate5View.init = (state, render) => {
       video.onloadedmetadata = () => {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-
         import('../utils/ocr').then(({ runOCR }) => {
           runOCR(video, canvas, (detectedId) => {
             containerInput.value = detectedId;
             stopScan();
-            alert('Detectado: ' + detectedId);
+            showFeedback('Detectado: ' + detectedId);
           });
         });
       };
     } catch (err) {
-      alert('Error cámara: ' + err.message);
+      showFeedback('Error cámara: ' + err.message, true);
       scanContainer.style.display = 'none';
     }
   });
