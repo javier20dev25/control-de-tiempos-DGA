@@ -90,7 +90,11 @@ getRedirectResult(auth)
 // Firebase Auth & Data Listeners
 onAuthStateChanged(auth, (user) => {
     state.user = user;
+    sessionStorage.removeItem('isAuthRedirect'); // Always clear redirect flag
     if (user) {
+        // Remember the user for the "Welcome Back" screen
+        localStorage.setItem('lastUserEmail', user.email || '');
+        localStorage.setItem('lastUserName', user.displayName || '');
         subscribeToRecords((records) => {
             state.records = records;
             render();
