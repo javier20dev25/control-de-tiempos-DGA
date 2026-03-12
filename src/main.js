@@ -5,8 +5,9 @@ import { JHIngresoView } from './components/JHIngresoView';
 import { InspectorView } from './components/InspectorView';
 import { JHSalidaView } from './components/JHSalidaView';
 import { AdminDashboard } from './components/AdminDashboard';
+import { getActiveShift } from './utils/shifts';
 
-import { auth, subscribeToRecords } from './utils/firebase';
+import { auth, subscribeToRecords, db } from './utils/firebase';
 import { onAuthStateChanged, getRedirectResult } from "firebase/auth";
 import { LoginView } from './components/LoginView';
 import { RoleSelectionView } from './components/RoleSelectionView';
@@ -16,7 +17,8 @@ const state = {
     currentRole: null, // Guarda el rol que eligió
     user: null,
     records: [],
-    loading: true, // Nuevo: estado de carga inicial
+    loading: true, 
+    activeShift: null, 
 };
 
 const views = {
@@ -112,8 +114,12 @@ onAuthStateChanged(auth, (user) => {
         localStorage.setItem('lastUserName', user.displayName || '');
         subscribeToRecords((records) => {
             state.records = records;
-            state.loading = false; // Datos cargados
-            render();
+            // Fetch active shift on login
+            getActiveShift(user.email).then(shift => {
+                state.activeShift = shift;
+                state.loading = false;
+                render();
+            });
         });
     } else {
         state.loading = false; // No hay usuario, no hay nada que cargar

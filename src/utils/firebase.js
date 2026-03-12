@@ -42,13 +42,13 @@ export const saveRecord = async (record) => {
 };
 
 export const subscribeToRecords = (callback) => {
-    // Optimization: Only fetch records from the last 48 hours to keep the app fast.
-    // This covers any pending work from previous shifts.
-    const fortyEightHoursAgo = Date.now() - (48 * 60 * 60 * 1000);
+    // Optimization: Only fetch records from the last 8 days (192h) to support weekly comparisons.
+    // This allows the Boss to see "Yesterday" and "Last Week" trends.
+    const eightDaysAgo = Date.now() - (192 * 60 * 60 * 1000);
     
     const q = query(
         collection(db, "records"), 
-        where("timestamp", ">=", fortyEightHoursAgo),
+        where("timestamp", ">=", eightDaysAgo),
         orderBy("timestamp", "desc")
     );
 
