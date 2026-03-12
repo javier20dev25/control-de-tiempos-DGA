@@ -1,49 +1,72 @@
 import Chart from 'chart.js/auto';
 
 export const AdminDashboard = (state) => {
-    const totalP5 = state.records.length;
-    const inRecinto = state.records.filter(r => r.status === 'en_recinto').length;
-    const inTransit = state.records.filter(r => r.status === 'en_transito').length;
-    const dispatched = state.records.filter(r => r.status === 'finalizado').length;
-    const fumigados = state.records.filter(r => r.fumigationDelayHours).length;
-    const problemasDocs = state.records.filter(r => r.status === 'problema_documental').length;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const recordsToday = state.records.filter(r => new Date(r.timestamp) >= today);
+    const recordsYesterday = state.records.filter(r => {
+        const d = new Date(r.timestamp);
+        return d >= yesterday && d < today;
+    });
+
+    const statsToday = {
+        total: recordsToday.length,
+        dispatched: recordsToday.filter(r => r.status === 'finalizado').length,
+        inTransit: recordsToday.filter(r => r.status === 'en_transito').length,
+        inRecinto: recordsToday.filter(r => r.status === 'en_recinto').length
+    };
+
+    const statsYesterday = {
+        total: recordsYesterday.length,
+        dispatched: recordsYesterday.filter(r => r.status === 'finalizado').length,
+        inTransit: recordsYesterday.filter(r => r.status === 'en_transito').length,
+        inRecinto: recordsYesterday.filter(r => r.status === 'en_recinto').length
+    };
 
     return `
     <div class="animate-in">
-      <h2 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 16px;">Dashboard</h2>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0;">Panel de Control</h2>
+        <button class="btn btn-secondary" id="btn-export-csv" style="padding: 8px 12px; font-size: 0.75rem;">
+          <i data-lucide="download" style="width: 14px;"></i> EXPORTAR CSV
+        </button>
+      </div>
       
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
-        <div class="card" style="padding: 14px; text-align: center;">
-          <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase;">P-5 Total</div>
-          <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">${totalP5}</div>
-        </div>
-        <div class="card" style="padding: 14px; text-align: center;">
-          <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase;">En Tránsito</div>
-          <div style="font-size: 1.5rem; font-weight: 800; color: var(--secondary);">${inTransit}</div>
-        </div>
-        <div class="card" style="padding: 14px; text-align: center;">
-          <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase;">En Recinto</div>
-          <div style="font-size: 1.5rem; font-weight: 800; color: var(--warning);">${inRecinto}</div>
-        </div>
-        <div class="card" style="padding: 14px; text-align: center;">
-          <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase;">Despachados</div>
-          <div style="font-size: 1.5rem; font-weight: 800; color: var(--success);">${dispatched}</div>
+      <!-- Resumen Hoy -->
+      <div style="margin-bottom: 24px;">
+        <h3 style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Resumen de Hoy</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="card" style="padding: 14px; text-align: center; margin-bottom: 0;">
+            <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500;">P5 Total</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">${statsToday.total}</div>
+          </div>
+          <div class="card" style="padding: 14px; text-align: center; margin-bottom: 0;">
+            <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500;">Despachados</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--success);">${statsToday.dispatched}</div>
+          </div>
         </div>
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
-        <div class="card" style="padding: 14px; text-align: center; border-color: rgba(239,68,68,0.2);">
-          <div style="font-size: 0.7rem; color: var(--accent); font-weight: 500; text-transform: uppercase;">Fumigaciones</div>
-          <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent);">${fumigados}</div>
-        </div>
-        <div class="card" style="padding: 14px; text-align: center; border-color: rgba(245,158,11,0.2);">
-          <div style="font-size: 0.7rem; color: var(--warning); font-weight: 500; text-transform: uppercase;">Prob. Docs</div>
-          <div style="font-size: 1.5rem; font-weight: 800; color: var(--warning);">${problemasDocs}</div>
+      <!-- Resumen Ayer -->
+      <div style="margin-bottom: 24px;">
+        <h3 style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Movimiento del Día Anterior</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="card" style="padding: 14px; text-align: center; margin-bottom: 0; background: #fdfdfd; border-style: dashed;">
+            <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500;">P5 Ayer</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--text-muted);">${statsYesterday.total}</div>
+          </div>
+          <div class="card" style="padding: 14px; text-align: center; margin-bottom: 0; background: #fdfdfd; border-style: dashed;">
+            <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500;">Despachos Ayer</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--text-muted);">${statsYesterday.dispatched}</div>
+          </div>
         </div>
       </div>
 
       <div class="card">
-        <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 12px;">Tiempos Promedio</h3>
+        <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 12px;">Tiempos Promedio (48h)</h3>
         <canvas id="cycleChart" style="max-height: 180px;"></canvas>
       </div>
 
@@ -57,12 +80,15 @@ export const AdminDashboard = (state) => {
                 </tr>
             </thead>
             <tbody>
-                ${state.records.slice(-5).reverse().map(r => {
-    let displayStatus = r.status || 'En Tránsito';
-    if (displayStatus === 'en_recinto') displayStatus = 'En Recinto';
-    if (displayStatus === 'problema_documental') displayStatus = 'Prob. Doc.';
-    
-    return `
+                ${state.records.slice(0, 10).map(r => {
+                    let displayStatus = r.status || 'En Tránsito';
+                    if (displayStatus === 'en_transito') displayStatus = 'Tránsito';
+                    if (displayStatus === 'en_recinto') displayStatus = 'Recinto';
+                    if (displayStatus === 'inspeccionado') displayStatus = 'Aprobado';
+                    if (displayStatus === 'problema_documental') displayStatus = 'Prob. Doc.';
+                    if (displayStatus === 'finalizado') displayStatus = 'Despachado';
+                    
+                    return `
                     <tr>
                         <td style="font-family: monospace; font-weight: 600;">${r.containerId || ''}</td>
                         <td>
@@ -71,38 +97,37 @@ export const AdminDashboard = (state) => {
                             </span>
                         </td>
                     </tr>
-                  `;
-}).join('')}
+                    `;
+                }).join('')}
             </tbody>
         </table>
       </div>
     </div>
-  `;
+    `;
 };
 
 AdminDashboard.init = (state) => {
     const ctx = document.getElementById('cycleChart');
     if (!ctx) return;
 
-    const recordsWithT3 = state.records.filter(r => r.t3);
-
-    const avgTraslado = recordsWithT3.length > 0
-        ? recordsWithT3.reduce((acc, r) => acc + (new Date(r.t2) - new Date(r.t1)), 0) / recordsWithT3.length / (1000 * 60)
+    // Filter records for chart
+    const processedRecords = state.records.filter(r => r.t2 && r.t1);
+    
+    const avgTraslado = processedRecords.length > 0
+        ? processedRecords.reduce((acc, r) => acc + (new Date(r.t2) - new Date(r.t1)), 0) / processedRecords.length / (1000 * 60)
         : 0;
 
-    const avgProceso = recordsWithT3.length > 0
-        ? recordsWithT3.reduce((acc, r) => acc + (new Date(r.t3) - new Date(r.t2)), 0) / recordsWithT3.length / (1000 * 60)
-        : 0;
+    const avgInspector = state.records.filter(r => r.inspectorTimestamp && r.t2).reduce((acc, r) => acc + (new Date(r.inspectorTimestamp) - new Date(r.t2)), 0) / (state.records.filter(r => r.inspectorTimestamp && r.t2).length || 1) / (1000 * 60);
 
     new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['Traslado (P5→JH)', 'Proceso (JH)'],
+            labels: ['P5 → JH', 'Inspección'],
             datasets: [{
                 label: 'Minutos',
-                data: [avgTraslado, avgProceso],
-                backgroundColor: ['rgba(37, 99, 235, 0.15)', 'rgba(14, 165, 233, 0.15)'],
-                borderColor: ['#2563eb', '#0ea5e9'],
+                data: [avgTraslado, avgInspector],
+                backgroundColor: ['rgba(37, 99, 235, 0.15)', 'rgba(16, 185, 129, 0.15)'],
+                borderColor: ['#2563eb', '#10b981'],
                 borderWidth: 1,
                 borderRadius: 6,
             }]
@@ -117,5 +142,32 @@ AdminDashboard.init = (state) => {
                 x: { grid: { display: false } }
             }
         }
+    });
+
+    // CSV Export
+    document.getElementById('btn-export-csv').addEventListener('click', () => {
+        const headers = ['Contenedor', 'Regimen', 'Declaración', 'Entrada P5', 'Llegada JH', 'Salida', 'Estado', 'Creado Por'];
+        const rows = state.records.map(r => [
+            r.containerId,
+            r.regime,
+            r.declaration,
+            r.t1 ? new Date(r.t1).toLocaleString() : '',
+            r.t2 ? new Date(r.t2).toLocaleString() : '',
+            r.t3 ? new Date(r.t3).toLocaleString() : '',
+            r.status,
+            r.createdBy
+        ]);
+
+        let csvContent = "data:text/csv;charset=utf-8," 
+            + headers.join(",") + "\n"
+            + rows.map(e => e.join(",")).join("\n");
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `reporte_duas_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     });
 };

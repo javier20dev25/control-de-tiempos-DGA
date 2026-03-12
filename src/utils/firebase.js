@@ -12,7 +12,7 @@ export const firebaseConfig = {
 
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, updateDoc, deleteDoc, where, Timestamp } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 const app = initializeApp(firebaseConfig);
@@ -32,7 +32,7 @@ export const saveRecord = async (record) => {
         const docId = record.containerId + '_' + record.timestamp;
         await setDoc(doc(db, "records", docId), {
             ...record,
-            serverTimestamp: new Date()
+            serverTimestamp: Timestamp.now()
         });
         return docId;
     } catch (e) {
@@ -42,12 +42,21 @@ export const saveRecord = async (record) => {
 };
 
 export const subscribeToRecords = (callback) => {
-    const q = query(collection(db, "records"), orderBy("timestamp", "desc"));
+    // Optimization: Only fetch records from the last 48 hours to keep the app fast.
+    // This covers any pending work from previous shifts.
+    const fortyEightHoursAgo = Date.now() - (48 * 60 * 60 * 1000);
+    
+    const q = query(
+        collection(db, "records"), 
+        where("timestamp", ">=", fortyEightHoursAgo),
+        orderBy("timestamp", "desc")
+    );
+
     return onSnapshot(q, (querySnapshot) => {
         const records = [];
         querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            // Backward compatibility: old records have data.id = containerId, no containerId field, no status field
+            // Backward compatibility
             const normalized = {
                 docId: docSnap.id,
                 ...data,
@@ -57,5 +66,7 @@ export const subscribeToRecords = (callback) => {
             records.push(normalized);
         });
         callback(records);
+    }, (error) => {
+        console.error("Snapshot error:", error);
     });
 };
