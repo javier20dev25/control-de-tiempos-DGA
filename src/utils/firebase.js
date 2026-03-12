@@ -46,7 +46,15 @@ export const subscribeToRecords = (callback) => {
     return onSnapshot(q, (querySnapshot) => {
         const records = [];
         querySnapshot.forEach((docSnap) => {
-            records.push({ docId: docSnap.id, ...docSnap.data() });
+            const data = docSnap.data();
+            // Backward compatibility: old records have data.id = containerId, no containerId field, no status field
+            const normalized = {
+                docId: docSnap.id,
+                ...data,
+                containerId: data.containerId || data.id || '',
+                status: data.status || (data.t3 ? 'finalizado' : data.t2 ? 'en_recinto' : 'en_transito'),
+            };
+            records.push(normalized);
         });
         callback(records);
     });

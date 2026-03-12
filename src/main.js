@@ -16,6 +16,7 @@ const state = {
     currentRole: null, // Guarda el rol que eligió
     user: null,
     records: [],
+    loading: true, // Nuevo: estado de carga inicial
 };
 
 const views = {
@@ -35,6 +36,19 @@ function render() {
     if (!state.user) {
         container.innerHTML = LoginView(state);
         LoginView.init(state, render);
+        if(headerBackBtn) headerBackBtn.style.display = 'none';
+        return;
+    }
+
+    // Mostrar pantalla de carga durante la sincronización inicial
+    if (state.loading) {
+        container.innerHTML = `
+            <div class="loading-container animate-in">
+                <div class="spinner"></div>
+                <div class="loading-text">Sincronizando base de datos aduanera...</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px;">Probando conexión con Firebase...</div>
+            </div>
+        `;
         if(headerBackBtn) headerBackBtn.style.display = 'none';
         return;
     }
@@ -84,6 +98,7 @@ getRedirectResult(auth)
         state.currentRole = null;
         state.currentView = 'login';
         state.user = null;
+        state.loading = false; // Desactivar carga en error
         render(); 
     });
 
@@ -97,9 +112,11 @@ onAuthStateChanged(auth, (user) => {
         localStorage.setItem('lastUserName', user.displayName || '');
         subscribeToRecords((records) => {
             state.records = records;
+            state.loading = false; // Datos cargados
             render();
         });
     } else {
+        state.loading = false; // No hay usuario, no hay nada que cargar
         state.currentRole = null; // reset role on logout
         state.currentView = 'roleSelection';
         render();
