@@ -1,5 +1,5 @@
 import { auth, googleProvider } from '../utils/firebase';
-import { signInWithPopup } from "firebase/auth";
+import { signInWithRedirect } from "firebase/auth";
 
 export const LoginView = (state) => `
   <div class="animate-in" style="margin-top: 50px;">
@@ -29,16 +29,25 @@ export const LoginView = (state) => `
 LoginView.init = (state, render) => {
     const btnLoginGoogle = document.getElementById('btn-login-google');
 
+    // Mantenemos el botón deshabilitado si sabemos que redirigimos a auth hace un momento
+    if (sessionStorage.getItem('isAuthRedirect')) {
+        btnLoginGoogle.disabled = true;
+        btnLoginGoogle.innerHTML = 'Verificando cuenta...';
+    }
+
     btnLoginGoogle.addEventListener('click', async () => {
         try {
+            sessionStorage.setItem('isAuthRedirect', 'true');
             btnLoginGoogle.disabled = true;
-            btnLoginGoogle.innerHTML = 'Conectando...';
-            await signInWithPopup(auth, googleProvider);
-            // On success, the onAuthStateChanged in main.js will trigger the state change
+            btnLoginGoogle.innerHTML = 'Conectando a Google...';
+            // Usa signInWithRedirect para evitar que los popups sean bloqueados
+            await signInWithRedirect(auth, googleProvider);
         } catch (err) {
+            sessionStorage.removeItem('isAuthRedirect');
             console.error('Login error:', err);
-            alert('Error de acceso con Google: ' + err.message);
+            alert('Error de acceso: ' + err.message);
             btnLoginGoogle.disabled = false;
+            // Restore button content
             btnLoginGoogle.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48">
                     <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>

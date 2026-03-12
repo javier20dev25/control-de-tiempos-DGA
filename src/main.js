@@ -7,7 +7,7 @@ import { JHSalidaView } from './components/JHSalidaView';
 import { AdminDashboard } from './components/AdminDashboard';
 
 import { auth, subscribeToRecords } from './utils/firebase';
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, getRedirectResult } from "firebase/auth";
 import { LoginView } from './components/LoginView';
 import { RoleSelectionView } from './components/RoleSelectionView';
 
@@ -66,6 +66,26 @@ function render() {
         icons: { LogOut, LogIn, BarChart2, Camera, Plus, Trash2, Edit2, Search, ChevronRight, ArrowLeft }
     });
 }
+
+// Catch redirect completion and errors
+getRedirectResult(auth)
+    .then((result) => {
+        if (result) {
+            // Success! The onAuthStateChanged listener handles the state assignment
+            sessionStorage.removeItem('isAuthRedirect');
+        }
+    })
+    .catch((error) => {
+        // Here we catch things like unverified domains or blocked accounts
+        sessionStorage.removeItem('isAuthRedirect');
+        console.error("Redirect Error:", error);
+        alert("Error de inicio de sesión: " + error.message);
+        // Re-render to ensure the UI updates if the user was stuck on "Verificando cuenta..."
+        state.currentRole = null;
+        state.currentView = 'login';
+        state.user = null;
+        render(); 
+    });
 
 // Firebase Auth & Data Listeners
 onAuthStateChanged(auth, (user) => {
