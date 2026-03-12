@@ -1,5 +1,5 @@
-import { auth } from '../utils/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { auth, googleProvider } from '../utils/firebase';
+import { signInWithPopup } from "firebase/auth";
 
 export const LoginView = (state) => `
   <div class="animate-in" style="margin-top: 50px;">
@@ -8,47 +8,46 @@ export const LoginView = (state) => `
         <div class="logo" style="font-size: 2rem;">BIENVENIDO</div>
         <p style="color: var(--text-muted);">Control de Tiempos Aduana</p>
       </div>
-      
-      <div class="input-group">
-        <label>Correo Electrónico</label>
-        <input type="email" id="login-email" placeholder="usuario@aduana.gob.ni" />
-      </div>
 
-      <div class="input-group">
-        <label>Contraseña</label>
-        <input type="password" id="login-password" placeholder="••••••••" />
-      </div>
-
-      <button class="btn btn-primary" style="width: 100%;" id="btn-login">
-        INGRESAR AL SISTEMA
+      <button class="btn btn-primary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;" id="btn-login-google">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48">
+            <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
+            <path fill="#FF3D00" d="m6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C16.318 4 9.656 8.337 6.306 14.691z"/>
+            <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.222 0-9.654-3.343-11.303-8l-6.571 4.819C9.656 39.663 16.318 44 24 44z"/>
+            <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
+        </svg>
+        Continuar con Google
       </button>
 
       <div style="margin-top: 20px; text-align: center; font-size: 0.8rem; color: var(--text-muted);">
-        Si no tiene cuenta, consulte con el administrador.
+        Debe usar una cuenta autorizada para acceder.
       </div>
     </div>
   </div>
 `;
 
 LoginView.init = (state, render) => {
-    const btnLogin = document.getElementById('btn-login');
-    const emailInput = document.getElementById('login-email');
-    const passwordInput = document.getElementById('login-password');
+    const btnLoginGoogle = document.getElementById('btn-login-google');
 
-    btnLogin.addEventListener('click', async () => {
-        const email = emailInput.value;
-        const password = passwordInput.value;
-
-        if (!email || !password) return alert('Complete sus credenciales');
-
+    btnLoginGoogle.addEventListener('click', async () => {
         try {
-            btnLogin.disabled = true;
-            btnLogin.innerText = 'AUTENTICANDO...';
-            await signInWithEmailAndPassword(auth, email, password);
+            btnLoginGoogle.disabled = true;
+            btnLoginGoogle.innerHTML = 'Conectando...';
+            await signInWithPopup(auth, googleProvider);
+            // On success, the onAuthStateChanged in main.js will trigger the state change
         } catch (err) {
-            alert('Error de acceso: ' + err.message);
-            btnLogin.disabled = false;
-            btnLogin.innerText = 'INGRESAR AL SISTEMA';
+            console.error('Login error:', err);
+            alert('Error de acceso con Google: ' + err.message);
+            btnLoginGoogle.disabled = false;
+            btnLoginGoogle.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48">
+                    <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
+                    <path fill="#FF3D00" d="m6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C16.318 4 9.656 8.337 6.306 14.691z"/>
+                    <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.222 0-9.654-3.343-11.303-8l-6.571 4.819C9.656 39.663 16.318 44 24 44z"/>
+                    <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
+                </svg>
+                Continuar con Google
+            `;
         }
     });
 };
