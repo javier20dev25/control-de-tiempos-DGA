@@ -13,71 +13,66 @@ export const LoginView = (state) => {
     const lastName = localStorage.getItem('lastUserName');
 
     const welcomeBackSection = lastEmail ? `
-      <div style="margin-bottom: 20px; padding: 15px; background: rgba(0,242,254,0.08); border: 1px solid rgba(0,242,254,0.2); border-radius: 12px; text-align: center;">
-        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 10px;">Sesión anterior:</p>
-        <p style="color: var(--text-main); font-weight: 600; font-size: 1rem; margin-bottom: 15px;">${lastName || lastEmail}</p>
-        <button class="btn btn-primary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;" id="btn-login-returning">
+      <div style="margin-bottom: 20px; padding: 16px; background: var(--primary-light); border-radius: 10px; text-align: center;">
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 8px;">Sesión anterior</p>
+        <p style="color: var(--text); font-weight: 600; margin-bottom: 16px;">${lastName || lastEmail}</p>
+        <button class="btn btn-primary" style="width: 100%;" id="btn-login-returning">
           ${googleSvg}
           Volver a entrar
         </button>
       </div>
-      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
-        <hr style="flex: 1; border: none; border-top: 1px solid var(--glass-border);">
-        <span style="color: var(--text-muted); font-size: 0.8rem;">o</span>
-        <hr style="flex: 1; border: none; border-top: 1px solid var(--glass-border);">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+        <hr style="flex: 1; border: none; border-top: 1px solid var(--border);">
+        <span style="color: var(--text-muted); font-size: 0.75rem;">o</span>
+        <hr style="flex: 1; border: none; border-top: 1px solid var(--border);">
       </div>
-      <button class="btn btn-secondary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;" id="btn-login-google">
+      <button class="btn btn-secondary" style="width: 100%;" id="btn-login-google">
         ${googleSvg}
-        Usar otra cuenta de Google
+        Usar otra cuenta
       </button>
     ` : `
-      <button class="btn btn-primary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;" id="btn-login-google">
+      <button class="btn btn-primary" style="width: 100%;" id="btn-login-google">
         ${googleSvg}
         Continuar con Google
       </button>
     `;
 
     return `
-      <div class="animate-in" style="margin-top: 50px;">
-        <div class="card glass">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <div class="logo" style="font-size: 2rem;">${lastEmail ? 'HOLA DE NUEVO' : 'BIENVENIDO'}</div>
-            <p style="color: var(--text-muted);">Control de Tiempos Aduana</p>
+      <div class="animate-in" style="margin-top: 40px;">
+        <div class="card">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">${lastEmail ? 'Hola de nuevo' : 'Bienvenido'}</h1>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Control de Tiempos — DGA</p>
           </div>
           ${welcomeBackSection}
-          <div style="margin-top: 20px; text-align: center; font-size: 0.8rem; color: var(--text-muted);">
-            Debe usar una cuenta autorizada para acceder.
-          </div>
+          <p style="margin-top: 16px; text-align: center; font-size: 0.75rem; color: var(--text-muted);">
+            Requiere cuenta autorizada.
+          </p>
         </div>
       </div>
     `;
 };
 
-// Helper to perform Google sign-in (try popup first, fallback to redirect)
 async function doGoogleSignIn(btn) {
     const originalContent = btn.innerHTML;
     try {
         btn.disabled = true;
         btn.innerHTML = 'Conectando...';
-        // Try popup first (faster UX)
         await signInWithPopup(auth, googleProvider);
     } catch (err) {
         if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user') {
-            // Fallback to redirect if popup is blocked
             try {
                 sessionStorage.setItem('isAuthRedirect', 'true');
-                btn.innerHTML = 'Redirigiendo a Google...';
+                btn.innerHTML = 'Redirigiendo...';
                 await signInWithRedirect(auth, googleProvider);
             } catch (redirectErr) {
                 sessionStorage.removeItem('isAuthRedirect');
-                console.error('Redirect error:', redirectErr);
-                alert('Error de acceso: ' + redirectErr.message);
+                alert('Error: ' + redirectErr.message);
                 btn.disabled = false;
                 btn.innerHTML = originalContent;
             }
         } else {
-            console.error('Login error:', err);
-            alert('Error de acceso: ' + err.message);
+            alert('Error: ' + err.message);
             btn.disabled = false;
             btn.innerHTML = originalContent;
         }
@@ -88,21 +83,17 @@ LoginView.init = (state, render) => {
     const btnLoginGoogle = document.getElementById('btn-login-google');
     const btnLoginReturning = document.getElementById('btn-login-returning');
 
-    // Show loading state if we're returning from a redirect
     if (sessionStorage.getItem('isAuthRedirect')) {
         const activeBtn = btnLoginReturning || btnLoginGoogle;
         if (activeBtn) {
             activeBtn.disabled = true;
-            activeBtn.innerHTML = 'Verificando cuenta...';
+            activeBtn.innerHTML = 'Verificando...';
         }
     }
 
-    // "Volver a entrar" button (returning user)
     if (btnLoginReturning) {
         btnLoginReturning.addEventListener('click', () => doGoogleSignIn(btnLoginReturning));
     }
-
-    // "Usar otra cuenta" or "Continuar con Google" button
     if (btnLoginGoogle) {
         btnLoginGoogle.addEventListener('click', () => doGoogleSignIn(btnLoginGoogle));
     }

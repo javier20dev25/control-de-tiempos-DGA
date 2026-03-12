@@ -5,80 +5,76 @@ export const AdminDashboard = (state) => {
     const inRecinto = state.records.filter(r => r.t2 && !r.t3).length;
     const inTransit = state.records.filter(r => r.t1 && !r.t2).length;
     const dispatched = state.records.filter(r => r.status === 'finalizado').length;
-
-    // Métricas del Inspector
     const fumigados = state.records.filter(r => r.fumigationDelayHours).length;
     const problemasDocs = state.records.filter(r => r.status === 'problema_documental').length;
 
     return `
     <div class="animate-in">
-      <h2 style="margin-bottom: 20px;">Dashboard Jefe Inspección</h2>
+      <h2 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 16px;">Dashboard</h2>
       
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
-        <div class="card glass" style="padding: 15px; text-align: center;">
-          <div style="font-size: 0.8rem; color: var(--text-muted);">P-5 TOTAL (HOY)</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+        <div class="card" style="padding: 14px; text-align: center;">
+          <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase;">P-5 Total</div>
           <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">${totalP5}</div>
         </div>
-        <div class="card glass" style="padding: 15px; text-align: center;">
-          <div style="font-size: 0.8rem; color: var(--text-muted);">EN TRÁNSITO</div>
+        <div class="card" style="padding: 14px; text-align: center;">
+          <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase;">En Tránsito</div>
           <div style="font-size: 1.5rem; font-weight: 800; color: var(--secondary);">${inTransit}</div>
         </div>
-        <div class="card glass" style="padding: 15px; text-align: center;">
-          <div style="font-size: 0.8rem; color: var(--text-muted);">EN RECINTO JH</div>
-          <div style="font-size: 1.5rem; font-weight: 800; color: #f59e0b;">${inRecinto}</div>
+        <div class="card" style="padding: 14px; text-align: center;">
+          <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase;">En Recinto</div>
+          <div style="font-size: 1.5rem; font-weight: 800; color: var(--warning);">${inRecinto}</div>
         </div>
-        <div class="card glass" style="padding: 15px; text-align: center;">
-          <div style="font-size: 0.8rem; color: var(--text-muted);">DESPACHADOS (FIN)</div>
+        <div class="card" style="padding: 14px; text-align: center;">
+          <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase;">Despachados</div>
           <div style="font-size: 1.5rem; font-weight: 800; color: var(--success);">${dispatched}</div>
         </div>
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
-        <div class="card glass" style="padding: 15px; text-align: center; border: 1px solid rgba(239, 68, 68, 0.3);">
-          <div style="font-size: 0.8rem; color: var(--danger);">FUMIGACIONES</div>
-          <div style="font-size: 1.5rem; font-weight: 800; color: var(--danger);">${fumigados}</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+        <div class="card" style="padding: 14px; text-align: center; border-color: rgba(239,68,68,0.2);">
+          <div style="font-size: 0.7rem; color: var(--accent); font-weight: 500; text-transform: uppercase;">Fumigaciones</div>
+          <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent);">${fumigados}</div>
         </div>
-        <div class="card glass" style="padding: 15px; text-align: center; border: 1px solid rgba(245, 158, 11, 0.3);">
-          <div style="font-size: 0.8rem; color: #f59e0b;">PROBLEMAS DOCS.</div>
-          <div style="font-size: 1.5rem; font-weight: 800; color: #f59e0b;">${problemasDocs}</div>
+        <div class="card" style="padding: 14px; text-align: center; border-color: rgba(245,158,11,0.2);">
+          <div style="font-size: 0.7rem; color: var(--warning); font-weight: 500; text-transform: uppercase;">Prob. Docs</div>
+          <div style="font-size: 1.5rem; font-weight: 800; color: var(--warning);">${problemasDocs}</div>
         </div>
       </div>
 
-      <div class="card glass">
-        <h3>Análisis de Tiempos (Promedio)</h3>
-        <canvas id="cycleChart" style="margin-top: 15px; max-height: 200px;"></canvas>
+      <div class="card">
+        <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 12px;">Tiempos Promedio</h3>
+        <canvas id="cycleChart" style="max-height: 180px;"></canvas>
       </div>
 
-      <div class="card glass">
-        <h3>Últimos Movimientos</h3>
-        <div style="overflow-x: auto; margin-top: 10px;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                <thead style="color: var(--text-muted); border-bottom: 1px solid var(--glass-border);">
+      <div class="card">
+        <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 12px;">Últimos Movimientos</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Cont.</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${state.records.slice(-5).reverse().map(r => {
+    let displayStatus = r.status || 'En Tránsito';
+    if (displayStatus === 'en_recinto') displayStatus = 'En Recinto';
+    if (displayStatus === 'problema_documental') displayStatus = 'Prob. Doc.';
+    
+    return `
                     <tr>
-                        <th style="text-align: left; padding: 10px;">CONT.</th>
-                        <th style="text-align: left; padding: 10px;">ESTADO REGISTRO</th>
+                        <td style="font-family: monospace; font-weight: 600;">${r.containerId || r.id}</td>
+                        <td>
+                            <span style="background: var(--bg); padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; border: 1px solid var(--border);">
+                                ${displayStatus}
+                            </span>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    ${state.records.slice(-5).reverse().map(r => {
-        let displayStatus = r.status || 'En Tránsito';
-        if (displayStatus === 'en_recinto') displayStatus = 'En Recinto';
-        if (displayStatus === 'problema_documental') displayStatus = 'Prob. Documental';
-        
-        return `
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                            <td style="padding: 10px; font-family: monospace;">${r.containerId || r.id}</td>
-                            <td style="padding: 10px;">
-                                <span style="background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px;">
-                                    ${displayStatus}
-                                </span>
-                            </td>
-                        </tr>
-                      `;
-    }).join('')}
-                </tbody>
-            </table>
-        </div>
+                  `;
+}).join('')}
+            </tbody>
+        </table>
       </div>
     </div>
   `;
@@ -101,19 +97,14 @@ AdminDashboard.init = (state) => {
     new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['Traslado (P5-JH)', 'Proceso (JH)'],
+            labels: ['Traslado (P5→JH)', 'Proceso (JH)'],
             datasets: [{
                 label: 'Minutos',
                 data: [avgTraslado, avgProceso],
-                backgroundColor: [
-                    'rgba(0, 242, 254, 0.5)',
-                    'rgba(79, 172, 254, 0.5)'
-                ],
-                borderColor: [
-                    '#00f2fe',
-                    '#4facfe'
-                ],
-                borderWidth: 1
+                backgroundColor: ['rgba(37, 99, 235, 0.15)', 'rgba(14, 165, 233, 0.15)'],
+                borderColor: ['#2563eb', '#0ea5e9'],
+                borderWidth: 1,
+                borderRadius: 6,
             }]
         },
         options: {
@@ -122,7 +113,7 @@ AdminDashboard.init = (state) => {
                 legend: { display: false }
             },
             scales: {
-                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false } },
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' }, border: { display: false } },
                 x: { grid: { display: false } }
             }
         }

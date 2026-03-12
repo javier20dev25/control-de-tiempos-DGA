@@ -2,69 +2,66 @@ import { validateContainer, sanitizeContainer } from '../utils/validation';
 
 export const Gate5View = (state) => `
   <div class="animate-in">
-    <div class="card glass">
-      <h2 style="margin-bottom: 20px;">Portón 5 - Salida</h2>
+    <div class="card">
+      <h2 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 16px;">Portón 5 — Salida</h2>
       
       <div class="regime-grid">
-        <button class="btn btn-secondary regime-btn" data-regime="VACIO" id="btn-vacio">
-          <i data-lucide="package"></i>
+        <button class="btn btn-secondary regime-btn" data-regime="VACIO">
+          <i data-lucide="package" style="width: 20px;"></i>
           VACÍO
         </button>
-        <button class="btn btn-secondary regime-btn" data-regime="TRASLADO" id="btn-traslado">
-          <i data-lucide="truck"></i>
+        <button class="btn btn-secondary regime-btn" data-regime="TRASLADO">
+          <i data-lucide="truck" style="width: 20px;"></i>
           TRASLADO
         </button>
-        <button class="btn btn-secondary regime-btn" data-regime="VERDE" id="btn-verde">
-          <i data-lucide="check-circle"></i>
+        <button class="btn btn-secondary regime-btn" data-regime="VERDE">
+          <i data-lucide="check-circle" style="width: 20px;"></i>
           VERDE (L-)
         </button>
-        <button class="btn btn-secondary regime-btn" data-regime="TRANSITO" id="btn-transito">
-          <i data-lucide="compass"></i>
+        <button class="btn btn-secondary regime-btn" data-regime="TRANSITO">
+          <i data-lucide="compass" style="width: 20px;"></i>
           TRÁNSITO (D-)
         </button>
       </div>
 
       <div class="input-group">
-        <label>Número de Declaración / Duca</label>
+        <label>Declaración / Duca</label>
         <input type="text" id="declaration-input" placeholder="L-12345 o D-12345" />
       </div>
 
       <div class="input-group">
-        <label>Número de Contenedor (ABCD1234567)</label>
+        <label>Contenedor (ABCD1234567)</label>
         <div style="display: flex; gap: 8px;">
           <input type="text" id="container-input" placeholder="ABCD1234567" maxlength="11" />
-          <button class="btn btn-secondary" id="btn-scan" title="Escanear">
-            <i data-lucide="camera"></i>
+          <button class="btn btn-secondary" id="btn-scan" title="Escanear" style="padding: 12px;">
+            <i data-lucide="camera" style="width: 18px;"></i>
           </button>
         </div>
       </div>
 
-      <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" id="btn-add">
-        <i data-lucide="plus"></i>
+      <button class="btn btn-primary" style="width: 100%;" id="btn-add">
+        <i data-lucide="plus" style="width: 18px;"></i>
         REGISTRAR SALIDA
       </button>
     </div>
 
-    <div id="scan-container" style="display: none; margin-bottom: 20px;" class="card glass">
-        <video id="video" style="width: 100%; border-radius: 12px;"></video>
-        <div id="scan-mask" style="border: 2px solid var(--primary); height: 50px; margin-top: -100px; position: relative; z-index: 10; pointer-events: none;"></div>
-        <button class="btn btn-secondary" style="width: 100%; margin-top: 130px;" id="btn-close-scan">CERRAR CÁMARA</button>
+    <div id="scan-container" style="display: none;" class="card">
+        <video id="video" style="width: 100%; border-radius: 8px;"></video>
+        <button class="btn btn-secondary" style="width: 100%; margin-top: 10px;" id="btn-close-scan">CERRAR CÁMARA</button>
     </div>
 
-    <div class="card glass">
-      <h3>Registros Recientes</h3>
-      <div id="recent-list" style="margin-top: 15px;">
+    <div class="card">
+      <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 12px;">Recientes</h3>
+      <div id="recent-list">
         ${state.records.filter(r => !r.t3).slice(-5).reverse().map(r => `
-          <div style="padding: 12px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+          <div style="padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <div style="font-weight: 600;">${r.id}</div>
-              <div style="font-size: 0.8rem; color: var(--text-muted);">${r.regime} | ${r.declaration || 'S/D'}</div>
+              <div style="font-weight: 600; font-size: 0.9rem;">${r.id}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">${r.regime} | ${r.declaration || 'S/D'}</div>
             </div>
-            <div style="display: flex; gap: 10px;">
-                <button class="nav-item btn-delete" data-id="${r.timestamp}" style="background: none; border: none; cursor: pointer;">
-                    <i data-lucide="trash-2" style="color: var(--accent); width: 18px;"></i>
-                </button>
-            </div>
+            <button class="btn-icon btn-delete" data-id="${r.timestamp}" style="color: var(--accent);">
+                <i data-lucide="trash-2" style="width: 16px;"></i>
+            </button>
           </div>
         `).join('')}
       </div>
@@ -99,7 +96,7 @@ Gate5View.init = (state, render) => {
     const declaration = declarationInput.value;
 
     if (!selectedRegime) return alert('Seleccione un régimen');
-    if (!validateContainer(containerId)) return alert('Número de contenedor inválido (ISO 6346)');
+    if (!validateContainer(containerId)) return alert('Formato inválido: 4 letras + 7 dígitos');
 
     const record = {
       id: containerId,
@@ -114,15 +111,14 @@ Gate5View.init = (state, render) => {
       saveRecord(record);
     });
 
-    // Clear inputs and give feedback
     containerInput.value = '';
     declarationInput.value = '';
-    alert('Salida registrada con éxito');
+    alert('Salida registrada');
   });
 
   document.querySelectorAll('.btn-delete').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!confirm('¿Desea eliminar este registro?')) return;
+      if (!confirm('¿Eliminar este registro?')) return;
       const id = btn.dataset.id;
       const record = state.records.find(r => r.timestamp == id);
       if (record) {
@@ -151,7 +147,6 @@ Gate5View.init = (state, render) => {
       video.play();
 
       const canvas = document.createElement('canvas');
-      // Dynamic canvas resizing
       video.onloadedmetadata = () => {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
@@ -160,12 +155,12 @@ Gate5View.init = (state, render) => {
           runOCR(video, canvas, (detectedId) => {
             containerInput.value = detectedId;
             stopScan();
-            alert('Contenedor detectado: ' + detectedId);
+            alert('Detectado: ' + detectedId);
           });
         });
       };
     } catch (err) {
-      alert('Error al acceder a la cámara: ' + err.message);
+      alert('Error cámara: ' + err.message);
       scanContainer.style.display = 'none';
     }
   });

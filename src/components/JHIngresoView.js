@@ -1,15 +1,15 @@
 export const JHIngresoView = (state) => `
   <div class="animate-in">
-    <div class="card glass">
-      <h2 style="margin-bottom: 20px;">Julia Herrera - Ingreso</h2>
+    <div class="card">
+      <h2 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 16px;">Julia Herrera — Ingreso</h2>
       
       <div class="input-group">
-        <label>Buscar por últimos 4 dígitos del contenedor</label>
-        <input type="text" id="search-input" placeholder="Ej: 0012" maxlength="4" />
+        <label>Buscar por últimos 4 dígitos</label>
+        <input type="text" id="search-input" placeholder="Ej: 0012" maxlength="4" style="text-align: center; letter-spacing: 2px; font-size: 1.2rem;" />
       </div>
 
-      <div id="search-results" style="margin-top: 20px;">
-        <div style="color: var(--text-muted); text-align: center; padding: 20px;">
+      <div id="search-results" style="margin-top: 16px;">
+        <div style="color: var(--text-muted); text-align: center; padding: 20px; font-size: 0.85rem;">
           Ingrese los últimos 4 dígitos para buscar contenedores en tránsito.
         </div>
       </div>
@@ -24,26 +24,26 @@ JHIngresoView.init = (state, render) => {
   searchInput.addEventListener('input', (e) => {
     const query = e.target.value;
     if (query.length < 2) {
-      resultsDir.innerHTML = `<div style="color: var(--text-muted); text-align: center; padding: 20px;">Mínimo 2 dígitos...</div>`;
+      resultsDir.innerHTML = `<div style="color: var(--text-muted); text-align: center; padding: 20px; font-size: 0.85rem;">Mínimo 2 dígitos...</div>`;
       return;
     }
 
     const matched = state.records.filter(r => r.id.endsWith(query) && !r.t2);
 
     if (matched.length === 0) {
-      resultsDir.innerHTML = `<div style="color: var(--text-muted); text-align: center; padding: 20px;">No se encontraron contenedores pendientes.</div>`;
+      resultsDir.innerHTML = `<div style="color: var(--text-muted); text-align: center; padding: 20px; font-size: 0.85rem;">No se encontraron contenedores pendientes.</div>`;
       return;
     }
 
     resultsDir.innerHTML = matched.map(r => `
-      <div class="glass animate-in" style="padding: 15px; margin-bottom: 15px; border-color: rgba(255,255,255,0.05);">
+      <div class="card" style="padding: 14px; margin-bottom: 10px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <div style="font-weight: 800; color: var(--primary);">${r.id}</div>
-            <div style="font-size: 0.8rem; color: var(--text-muted);">${r.regime} | ${r.declaration || 'S/D'}</div>
+            <div style="font-weight: 700; color: var(--primary);">${r.id}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">${r.regime} | ${r.declaration || 'S/D'}</div>
           </div>
-          <button class="btn btn-primary btn-arrival" data-id="${r.timestamp}">
-            <i data-lucide="check"></i>
+          <button class="btn btn-primary btn-arrival" data-id="${r.timestamp}" style="padding: 8px 16px; font-size: 0.8rem;">
+            <i data-lucide="check" style="width: 16px;"></i>
             LLEGADA
           </button>
         </div>
