@@ -152,6 +152,14 @@ Gate5View.init = (state, render) => {
   const declarationInput = document.getElementById('declaration-input');
   const feedbackMsg = document.getElementById('feedback-msg');
 
+  const sanitizeContainer = (val) => {
+    return val.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 11);
+  };
+
+  const validateContainer = (val) => {
+    return /^[A-Z]{4}\d{7}$/.test(val);
+  };
+
   const showFeedback = (msg, isError = false) => {
     feedbackMsg.textContent = msg;
     feedbackMsg.style.display = 'block';

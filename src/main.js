@@ -1,10 +1,11 @@
-import { createIcons, LogOut, LogIn, BarChart2, Camera, Plus, Trash2, Edit2, Search, ChevronRight, ArrowLeft, Package, Truck, CheckCircle, Compass, Check, AlertTriangle, Wind, FileWarning } from 'lucide';
+import { createIcons, LogOut, LogIn, BarChart2, Camera, Plus, Trash2, Edit2, Search, ChevronRight, ArrowLeft, Package, Truck, CheckCircle, Compass, Check, AlertTriangle, Wind, FileWarning, Lock } from 'lucide';
 import './style.css';
 import { Gate5View } from './components/Gate5View';
 import { JHIngresoView } from './components/JHIngresoView';
 import { InspectorView } from './components/InspectorView';
 import { JHSalidaView } from './components/JHSalidaView';
 import { AdminDashboard } from './components/AdminDashboard';
+import { PotosiView } from './components/PotosiView';
 import { getActiveShift } from './utils/shifts';
 
 import { auth, subscribeToRecords, db } from './utils/firebase';
@@ -30,6 +31,7 @@ const views = {
     inspector: InspectorView,
     'jh-out': JHSalidaView,
     admin: AdminDashboard,
+    potosi: PotosiView,
 };
 
 function render() {
@@ -80,7 +82,7 @@ function render() {
     }
 
     createIcons({
-        icons: { LogOut, LogIn, BarChart2, Camera, Plus, Trash2, Edit2, Search, ChevronRight, ArrowLeft, Package, Truck, CheckCircle, Compass, Check, AlertTriangle, Wind, FileWarning }
+        icons: { LogOut, LogIn, BarChart2, Camera, Plus, Trash2, Edit2, Search, ChevronRight, ArrowLeft, Package, Truck, CheckCircle, Compass, Check, AlertTriangle, Wind, FileWarning, Lock }
     });
 }
 

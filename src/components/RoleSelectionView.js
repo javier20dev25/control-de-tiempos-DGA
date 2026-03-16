@@ -45,6 +45,13 @@ export const RoleSelectionView = (state) => `
         </div>
         <i data-lucide="chevron-right" style="color: var(--text-muted); width: 18px;"></i>
       </button>
+      <button class="card role-btn" data-role="potosi" style="cursor: pointer; text-align: left; display: flex; align-items: center; justify-content: space-between; padding: 16px; margin-bottom: 0;">
+        <div>
+          <h3 style="margin: 0; font-size: 1rem; font-weight: 600;">Control Informes Potosí</h3>
+          <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">Registro de lanchas, tripulación y pasajeros</p>
+        </div>
+        <i data-lucide="chevron-right" style="color: var(--text-muted); width: 18px;"></i>
+      </button>
     </div>
 
     <div style="margin-top: 32px; text-align: center;">
