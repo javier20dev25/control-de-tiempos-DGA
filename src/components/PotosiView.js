@@ -59,7 +59,7 @@ export const PotosiView = (state) => {
 
         <!-- MODAL -->
         <div id="boat-modal" class="modal">
-            <div class="modal-content" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-content">
                 <div class="modal-header">
                     <h2 id="modal-title">Aperturar Lancha</h2>
                     <button class="close-modal">&times;</button>
@@ -174,9 +174,14 @@ PotosiView.init = (state, render) => {
         `).join('');
         
         // Re-init icons for dynamic content
-        if (window.lucide) {
-            window.lucide.createIcons();
-        }
+        try {
+            if (window.lucide) {
+                window.lucide.createIcons();
+            } else {
+                // Fallback or let main.js handle it
+                render(); 
+            }
+        } catch(e) { console.error("Lucide error:", e); }
     };
 
     // BTN: Aperturar Lancha
@@ -268,8 +273,15 @@ PotosiView.init = (state, render) => {
         }
 
         localStorage.setItem('potosi_boats', JSON.stringify(savedBoats));
+        
+        // Finalize state
+        currentBoatId = null;
         modal.classList.remove('active');
-        render();
+        
+        // Critical: Small delay to ensure state is clear before re-render
+        setTimeout(() => {
+            render();
+        }, 100);
     };
 
     // DASHBOARD: Click Handlers

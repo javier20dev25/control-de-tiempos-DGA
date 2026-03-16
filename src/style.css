@@ -62,6 +62,13 @@ main {
   padding-bottom: 80px;
 }
 
+@media (min-width: 768px) {
+  main {
+    max-width: 1000px;
+    padding: 32px;
+  }
+}
+
 /* Cards */
 .card {
   background: var(--bg-card);
@@ -280,8 +287,8 @@ table tr td:last-child { border-right: 1px solid transparent; border-radius: 0 1
 /* Potosi View Specific */
 .grid-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
 }
 
 .boat-card {
@@ -312,8 +319,8 @@ table tr td:last-child { border-right: 1px solid transparent; border-radius: 0 1
   display: none;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  padding: 16px;
+  z-index: 2000;
+  padding: 20px;
 }
 
 .modal.active {
@@ -325,8 +332,16 @@ table tr td:last-child { border-right: 1px solid transparent; border-radius: 0 1
   border-radius: 20px;
   width: 100%;
   max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: var(--shadow-lg);
   animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (min-width: 768px) {
+  .modal-content {
+    max-width: 700px;
+  }
 }
 
 @keyframes modalIn {
