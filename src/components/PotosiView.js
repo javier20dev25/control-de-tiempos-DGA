@@ -177,9 +177,6 @@ PotosiView.init = (state, render) => {
         try {
             if (window.lucide) {
                 window.lucide.createIcons();
-            } else {
-                // Fallback or let main.js handle it
-                render(); 
             }
         } catch(e) { console.error("Lucide error:", e); }
     };

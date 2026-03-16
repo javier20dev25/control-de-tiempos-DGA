@@ -8,6 +8,8 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { PotosiView } from './components/PotosiView';
 import { getActiveShift } from './utils/shifts';
 
+window.lucide = { createIcons };
+
 import { auth, subscribeToRecords, db } from './utils/firebase';
 import { onAuthStateChanged, getRedirectResult } from "firebase/auth";
 import { LoginView } from './components/LoginView';
