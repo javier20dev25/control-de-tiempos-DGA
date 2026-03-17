@@ -8,7 +8,10 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { PotosiView } from './components/PotosiView';
 import { getActiveShift } from './utils/shifts';
 
-window.lucide = { createIcons };
+const allIcons = { LogOut, LogIn, BarChart2, Camera, Plus, Trash2, Edit2, Search, ChevronRight, ArrowLeft, Package, Truck, CheckCircle, Compass, Check, AlertTriangle, Wind, FileWarning, Lock };
+window.lucide = {
+    createIcons: (options = {}) => createIcons({ icons: allIcons, ...options })
+};
 
 import { auth, subscribeToRecords, db } from './utils/firebase';
 import { onAuthStateChanged, getRedirectResult } from "firebase/auth";
@@ -83,9 +86,7 @@ function render() {
         if (ViewComponent.init) ViewComponent.init(state, render);
     }
 
-    createIcons({
-        icons: { LogOut, LogIn, BarChart2, Camera, Plus, Trash2, Edit2, Search, ChevronRight, ArrowLeft, Package, Truck, CheckCircle, Compass, Check, AlertTriangle, Wind, FileWarning, Lock }
-    });
+    window.lucide.createIcons();
 }
 
 // Catch redirect completion and errors
