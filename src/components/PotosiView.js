@@ -5,59 +5,111 @@ export const PotosiView = (state) => {
     // Load boats from localStorage or initialize
     const savedBoats = JSON.parse(localStorage.getItem('potosi_boats') || '[]');
     
+    // Calculate Stats
+    const totalLanchas = savedBoats.length;
+    const totalTripulantes = savedBoats.reduce((sum, b) => sum + (b.crewPhotos?.length || 0), 0);
+    const totalRegionales = savedBoats.reduce((sum, b) => sum + b.passengers.filter(p => p.type === 'regional').length, 0);
+    const totalInterregionales = savedBoats.reduce((sum, b) => sum + b.passengers.filter(p => p.type === 'interregional').length, 0);
+
     return `
     <div class="animate-in">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
             <div>
-                <h2 style="font-weight: 700; font-size: 1.25rem;">Control Informes Potosí</h2>
-                <p style="color: var(--text-muted); font-size: 0.85rem;">Gestión de ingresos marítimos diarios</p>
+                <h2 style="font-weight: 700; font-size: 1.5rem; margin-bottom: 4px;">Informes Potosí</h2>
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-muted);">
+                    <i data-lucide="compass" style="width: 14px;"></i>
+                    <span>Control de flujo marítimo diario</span>
+                </div>
             </div>
-            <button id="btn-open-boat" class="btn btn-primary" style="display: flex; align-items: center; gap: 8px;">
-                <i data-lucide="plus" style="width: 18px;"></i>
+            <button id="btn-open-boat" class="btn btn-primary" style="display: flex; align-items: center; gap: 8px; padding: 10px 20px;">
+                <i data-lucide="plus-circle" style="width: 20px;"></i>
                 Aperturar Lancha
             </button>
         </div>
 
+        <!-- STATS CARDS -->
+        <div class="grid-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px;">
+            <div class="card" style="padding: 12px; text-align: center; border-left: 4px solid var(--primary);">
+                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Lanchas</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">${totalLanchas}</div>
+            </div>
+            <div class="card" style="padding: 12px; text-align: center; border-left: 4px solid var(--success);">
+                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Tripulantes</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--success);">${totalTripulantes}</div>
+            </div>
+            <div class="card" style="padding: 12px; text-align: center; border-left: 4px solid var(--info);">
+                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Regional</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--info);">${totalRegionales}</div>
+            </div>
+            <div class="card" style="padding: 12px; text-align: center; border-left: 4px solid var(--warning);">
+                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Interreg.</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--warning);">${totalInterregionales}</div>
+            </div>
+        </div>
+
         <div id="potosi-dashboard" class="grid-container">
             ${savedBoats.length === 0 ? `
-                <div class="card" style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">
-                    <i data-lucide="compass" style="width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.5;"></i>
-                    <p>No hay lanchas registradas hoy.</p>
+                <div class="card" style="grid-column: 1/-1; text-align: center; padding: 60px; color: var(--text-muted); border: 2px dashed var(--border);">
+                    <i data-lucide="anchor" style="width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.3;"></i>
+                    <p style="font-size: 1.1rem; font-weight: 500;">Esperando datos de la primera lancha...</p>
+                    <p style="font-size: 0.85rem; margin-top: 8px;">Presiona "Aperturar Lancha" para comenzar.</p>
                 </div>
             ` : savedBoats.map((boat, idx) => `
-                <div class="card boat-card animate-in" data-id="${boat.id}" style="padding: 16px;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <div>
-                            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 4px;">${boat.name}</h3>
-                            <p style="font-size: 0.8rem; color: var(--text-muted);">${new Date(boat.date).toLocaleString()}</p>
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button class="btn-icon btn-generate-report" title="Generar Informe Word" data-id="${boat.id}">
-                                <i data-lucide="file-warning" style="width: 16px;"></i>
-                            </button>
-                            <button class="btn-icon btn-edit-boat" data-id="${boat.id}">
-                                <i data-lucide="edit-2" style="width: 16px;"></i>
-                            </button>
+                <div class="card boat-card animate-in" data-id="${boat.id}" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+                    <div style="padding: 16px; border-bottom: 1px solid var(--border); background: var(--bg-alt);">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 2px;">${boat.name}</h3>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px;">
+                                    <i data-lucide="clock" style="width: 12px;"></i>
+                                    ${new Date(boat.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn-icon btn-edit-boat" data-id="${boat.id}" style="background: var(--card-bg); shadow: var(--shadow-sm);">
+                                    <i data-lucide="edit-3" style="width: 16px;"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <div style="margin-top: 12px; font-size: 0.85rem;">
-                        <span class="badge badge-info">${boat.passengers.length} Pasajeros</span>
-                        <span class="badge badge-success">${boat.crewCount || 0} Tripulantes</span>
+                    
+                    <div style="padding: 16px; flex-grow: 1;">
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <span style="font-size: 0.85rem; color: var(--text-muted);"><i data-lucide="users" style="width: 14px; vertical-align: middle; margin-right: 6px;"></i>Tripulación</span>
+                                <span style="font-weight: 600; font-size: 0.9rem;">${boat.crewPhotos?.length || 0} fotos</span>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <span style="font-size: 0.85rem; color: var(--text-muted);"><i data-lucide="user-plus" style="width: 14px; vertical-align: middle; margin-right: 6px;"></i>Pasajeros CA-4</span>
+                                <span style="font-weight: 600; font-size: 0.9rem;">${boat.passengers.filter(p => p.type === 'regional').length}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <span style="font-size: 0.85rem; color: var(--text-muted);"><i data-lucide="globe" style="width: 14px; vertical-align: middle; margin-right: 6px;"></i>Interregionales</span>
+                                <span style="font-weight: 600; font-size: 0.9rem;">${boat.passengers.filter(p => p.type === 'interregional').length}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="padding: 12px; background: var(--bg-alt); border-top: 1px solid var(--border);">
+                        <button class="btn btn-secondary btn-generate-report" style="width: 100%; justify-content: center; gap: 8px; font-size: 0.85rem; background: var(--primary); color: white; border: none;" data-id="${boat.id}">
+                            <i data-lucide="file-text" style="width: 16px;"></i>
+                            GENERAR INFORME WORD
+                        </button>
                     </div>
                 </div>
             `).join('')}
         </div>
 
-        ${savedBoats.length > 0 ? `
-            <div style="margin-top: 24px; text-align: center;">
-                <button id="btn-send-report" class="btn btn-secondary" style="gap: 8px;">
-                    <i data-lucide="package" style="width: 18px;"></i>
-                    Enviar Reporte Global (ZIP)
+        ${savedBoats.length > 1 ? `
+            <div style="margin-top: 32px; border-top: 1px solid var(--border); padding-top: 24px; text-align: center;">
+                <button id="btn-send-report" class="btn btn-secondary" style="gap: 8px; padding: 12px 24px;">
+                    <i data-lucide="archive" style="width: 20px;"></i>
+                    Descargar Todos los Informes (ZIP)
                 </button>
             </div>
         ` : ''}
 
-        <!-- MODAL -->
+        <!-- MODAL (Resto del código igual) -->
         <div id="boat-modal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -70,6 +122,7 @@ export const PotosiView = (state) => {
                             <label>Nombre de la Lancha</label>
                             <input type="text" id="boat-name" required placeholder="Ej. La Niña I">
                         </div>
+v>
                         
                         <div class="form-group">
                             <label>Foto de la Matrícula</label>
