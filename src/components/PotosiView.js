@@ -256,29 +256,53 @@ PotosiView.init = (state, render) => {
 
     // FORM: Submit
     form.onsubmit = (e) => {
-        e.preventDefault();
-        boatData.name = document.getElementById('boat-name').value;
-        boatData.crewCount = boatData.crewPhotos.length; // Approximate or we could add a field
+        try {
+            e.preventDefault();
+            console.log("Saving boat data...", boatData);
+            
+            const nameInput = document.getElementById('boat-name');
+            if (!nameInput) throw new Error("Input 'boat-name' not found");
+            
+            boatData.name = nameInput.value;
+            boatData.crewCount = boatData.crewPhotos.length;
 
-        const savedBoats = JSON.parse(localStorage.getItem('potosi_boats') || '[]');
-        const existingIdx = savedBoats.findIndex(b => b.id === boatData.id);
-        
-        if (existingIdx >= 0) {
-            savedBoats[existingIdx] = boatData;
-        } else {
-            savedBoats.push(boatData);
+            const savedBoats = JSON.parse(localStorage.getItem('potosi_boats') || '[]');
+            const existingIdx = savedBoats.findIndex(b => b.id === boatData.id);
+            
+            if (existingIdx >= 0) {
+                savedBoats[existingIdx] = boatData;
+            } else {
+                savedBoats.push(boatData);
+            }
+
+            console.log("Attempting to save to localStorage...");
+            try {
+                localStorage.setItem('potosi_boats', JSON.stringify(savedBoats));
+            } catch (storageError) {
+                console.error("LocalStorage error:", storageError);
+                if (storageError.name === 'QuotaExceededError' || storageError.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+                    alert("Error: No hay espacio suficiente en el navegador. Intenta con fotos más pequeñas o limpia los datos.");
+                } else {
+                    alert("Error al guardar en el navegador: " + storageError.message);
+                }
+                return; // Don't close modal if save failed
+            }
+            
+            console.log("Saved successfully. Closing modal.");
+            
+            // Finalize state
+            currentBoatId = null;
+            modal.classList.remove('active');
+            
+            // Critical: Small delay to ensure state is clear before re-render
+            setTimeout(() => {
+                console.log("Re-rendering Potosi view...");
+                render();
+            }, 100);
+        } catch (err) {
+            console.error("Critical error in onsubmit:", err);
+            alert("Error crítico al guardar: " + err.message);
         }
-
-        localStorage.setItem('potosi_boats', JSON.stringify(savedBoats));
-        
-        // Finalize state
-        currentBoatId = null;
-        modal.classList.remove('active');
-        
-        // Critical: Small delay to ensure state is clear before re-render
-        setTimeout(() => {
-            render();
-        }, 100);
     };
 
     // DASHBOARD: Click Handlers
