@@ -137,11 +137,37 @@ PotosiView.init = (state, render) => {
     const form = document.getElementById('boat-form');
     const passengerList = document.getElementById('passengers-list');
 
+    // UI HELPER: Resize and Compress Image
+    const compressImage = (base64, maxWidth = 800) => new Promise((resolve) => {
+        const img = new Image();
+        img.src = base64;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.7)); // Compress to 70% quality JPEG
+        };
+    });
+
     // UI HELPER: File to Base64
     const fileToBase64 = (file) => new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
+        reader.onload = async () => {
+            const original = reader.result;
+            const compressed = await compressImage(original);
+            resolve(compressed);
+        };
         reader.onerror = error => reject(error);
     });
 
