@@ -1,4 +1,9 @@
-import { createIcons, LogOut, LogIn, BarChart2, Camera, Plus, Trash2, Edit2, Search, ChevronRight, ArrowLeft, Package, Truck, CheckCircle, Compass, Check, AlertTriangle, Wind, FileWarning, Lock } from 'lucide';
+import { 
+    createIcons, LogOut, LogIn, BarChart2, Camera, Plus, Trash2, Edit2, Search, 
+    ChevronRight, ArrowLeft, Package, Truck, CheckCircle, Compass, Check, 
+    AlertTriangle, Wind, FileWarning, Lock, PlusCircle, Clock, Edit3, Users, 
+    UserPlus, Globe, FileText, Archive, Anchor 
+} from 'lucide';
 import './style.css';
 import { Gate5View } from './components/Gate5View';
 import { JHIngresoView } from './components/JHIngresoView';
@@ -8,7 +13,12 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { PotosiView } from './components/PotosiView';
 import { getActiveShift } from './utils/shifts';
 
-const allIcons = { LogOut, LogIn, BarChart2, Camera, Plus, Trash2, Edit2, Search, ChevronRight, ArrowLeft, Package, Truck, CheckCircle, Compass, Check, AlertTriangle, Wind, FileWarning, Lock };
+const allIcons = { 
+    LogOut, LogIn, BarChart2, Camera, Plus, Trash2, Edit2, Search, 
+    ChevronRight, ArrowLeft, Package, Truck, CheckCircle, Compass, Check, 
+    AlertTriangle, Wind, FileWarning, Lock, PlusCircle, Clock, Edit3, Users, 
+    UserPlus, Globe, FileText, Archive, Anchor 
+};
 window.lucide = {
     createIcons: (options = {}) => createIcons({ icons: allIcons, ...options })
 };
